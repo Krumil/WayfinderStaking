@@ -150,9 +150,9 @@ const Home = () => {
 							<SlideUp delay={1}>
 								<DistributionInfo numberOfAddresses={sortedUserDeposits.length} />
 							</SlideUp>
-							<SlideUp delay={1}>
+							{/* <SlideUp delay={1}>
 								<DistributionChart pieData={pieData} />
-							</SlideUp>
+							</SlideUp> */}
 						</>
 					)}
 				</div>
