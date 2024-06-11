@@ -1,113 +1,164 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import "daisyui/dist/full.css";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { ethers } from "ethers";
+import { getPrimeBalance } from "../lib/contract";
+import { calculateTotalPoints, sortUserDeposits, fetchPrimeValue } from "../lib/utils";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import SlideUp from "@/components/ui/SlideUp";
+import AddressSearch from "@/components/AddressSearch";
+import DistributionInfo from "@/components/DistributionInfo";
+import DistributionChart from "@/components/DistributionChart";
+import useDeposits from "@/hooks/useDeposits";
+import Leaderboard from "@/components/Leaderboard";
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+ChartJS.register(ArcElement, Tooltip, Legend);
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+const DEFAULT_PRIME_SUPPLY = 1111111111;
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+const Home = () => {
+	const { allDeposits, error } = useDeposits();
+	const [addressInput, setAddressInput] = useState<string>("");
+	const [primeBalance, setPrimeBalance] = useState<number>(0);
+	const [primeSupply, setPrimeSupply] = useState<number>(DEFAULT_PRIME_SUPPLY);
+	const [primeValue, setPrimeValue] = useState<number>(0);
+	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
+	const router = useRouter();
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+	useEffect(() => {
+		const fetchPrimeBalance = async () => {
+			try {
+				const balance = await getPrimeBalance();
+				setPrimeBalance(parseFloat(balance));
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
-}
+				const response = await fetch("/api");
+				const data = await response.json();
+				setPrimeSupply(data.circulatingSupply);
+			} catch (err: any) {
+				console.error(err);
+			}
+		};
+
+		fetchPrimeBalance();
+
+		const getPrimeValue = async () => {
+			const value = await fetchPrimeValue();
+			setPrimeValue(value);
+			console.log(value);
+		};
+
+		getPrimeValue();
+	}, []);
+
+	// useeffect to calculate the total value in $ of the staked tokens
+	useEffect(() => {
+		const totalValue = primeBalance * primeValue;
+		setTotalStakedValueInUSD(totalValue);
+	}, [primeBalance, primeValue]);
+
+	const sortedUserDeposits = sortUserDeposits(allDeposits);
+	const totalPoints = sortedUserDeposits.reduce((acc, [, deposits]) => acc + calculateTotalPoints(deposits), 0);
+	const totalTokens = 1e9; // 1 billion tokens
+	const totalDistributedTokens = 0.4 * totalTokens;
+
+	const pieData = (() => {
+		const data: [string, number][] = [];
+		let others = 0;
+
+		sortedUserDeposits.forEach(([user, deposits]) => {
+			const userPoints = calculateTotalPoints(deposits);
+			const userShare = (userPoints / totalPoints) * totalDistributedTokens;
+			const percentage = (userShare / totalDistributedTokens) * 100;
+			if (percentage < 1) {
+				others += userShare;
+			} else {
+				data.push([user, userShare]);
+			}
+		});
+
+		if (others > 0) {
+			data.push(["Others", others]);
+		}
+
+		return data.map(([user, value]) => [
+			user === "Others" ? user : `${user.slice(0, 4)}...${user.slice(-4)}`,
+			value,
+			user
+		]);
+	})();
+
+	const handleSearch = () => {
+		router.push(`/address/${addressInput}`);
+	};
+
+	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
+	const calculateValidAddress = !ethers.isAddress(addressInput);
+
+	return (
+		<div className='flex flex-col items-center min-h-screen'>
+			{error && <p className='text-red-500'>{error}</p>}
+			<div className='text-3xl  text-center mt-[20vh] md:mt-[30vh] text-judge-gray-200'>
+				<SlideUp delay={0.1}>
+					<p className='flex flex-col justify-center items-center md:flex-row '>
+						There are currently{" "}
+						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
+							<AnimatedNumber value={primeBalance} />
+						</span>{" "}
+						$PRIME staked
+						<span className='text-2xl font-bold md:text-3xl mx-2 text-gradient-transparent'>
+							(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
+						</span>{" "}
+					</p>
+				</SlideUp>
+				<SlideUp delay={1.5}>
+					<p className='flex flex-col justify-center items-center md:flex-row mt-2 mb-8'>
+						This is about
+						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
+							<AnimatedNumber value={totalPercentageStaked} />%
+						</span>{" "}
+						of the total circulating supply
+					</p>
+				</SlideUp>
+				<SlideUp delay={3}>
+					<AddressSearch
+						addressInput={addressInput}
+						setAddressInput={setAddressInput}
+						handleSearch={handleSearch}
+						calculateValidAddress={calculateValidAddress}
+					/>
+				</SlideUp>
+			</div>
+			{sortedUserDeposits.length === 0 && (
+				<SlideUp delay={3.5}>
+					<div className='text-md font-bold text-center mt-4'>
+						<p className='text-gradient-transparent'>Loading more data...</p>
+					</div>
+				</SlideUp>
+			)}
+			{sortedUserDeposits.length > 0 && (
+				<div className='w-full'>
+					<SlideUp delay={0.1}>
+						<div className='my-10'>
+							<Leaderboard userDeposits={sortedUserDeposits.slice(0, 10)} primeValue={primeValue} />
+						</div>
+					</SlideUp>
+					{Object.keys(allDeposits).length > 0 && (
+						<>
+							<SlideUp delay={1}>
+								<DistributionInfo numberOfAddresses={sortedUserDeposits.length} />
+							</SlideUp>
+							<SlideUp delay={1}>
+								<DistributionChart pieData={pieData} />
+							</SlideUp>
+						</>
+					)}
+				</div>
+			)}
+		</div>
+	);
+};
+
+export default Home;

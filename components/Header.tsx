@@ -1,0 +1,98 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter, usePathname } from "next/navigation";
+import { fetchPrimeValue } from "@/lib/utils";
+
+const Header = () => {
+	const [primeValue, setPrimeValue] = useState<number>(0);
+	const [hidden, setHidden] = useState<boolean>(false);
+	const scrollPosition = useRef(0);
+	const router = useRouter();
+	const pathname = usePathname();
+	const [showBackButton, setShowBackButton] = useState<boolean>(pathname !== "/");
+
+	useEffect(() => {
+		setShowBackButton(pathname !== "/");
+	}, [pathname]);
+
+	useEffect(() => {
+		const getPrimeValue = async () => {
+			const value = await fetchPrimeValue();
+			setPrimeValue(value);
+		};
+
+		getPrimeValue();
+	}, []);
+
+	useEffect(() => {
+		const handleScroll = () => {
+			const currentScrollPosition = window.scrollY;
+
+			if (currentScrollPosition > scrollPosition.current) {
+				setHidden(true);
+			} else {
+				setHidden(false);
+			}
+
+			scrollPosition.current = currentScrollPosition;
+		};
+
+		window.addEventListener("scroll", handleScroll);
+
+		return () => {
+			window.removeEventListener("scroll", handleScroll);
+		};
+	}, []);
+
+	const handleBackClick = () => {
+		if (pathname !== "/") {
+			router.push("/");
+		}
+	};
+
+	return (
+		<header
+			className={`fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${
+				hidden ? "-translate-y-full" : "translate-y-0"
+			}`}>
+			<div className='flex items-center w-1/4'>
+				{showBackButton && (
+					<button onClick={handleBackClick} className='mr-4 p-2 rounded bg-transparent'>
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							className='h-6 w-6'
+							fill='none'
+							viewBox='0 0 24 24'
+							stroke='currentColor'>
+							<path
+								strokeLinecap='round'
+								strokeLinejoin='round'
+								strokeWidth={2}
+								d='M10 19l-7-7m0 0l7-7m-7 7h18'
+							/>
+						</svg>
+					</button>
+				)}
+				{!showBackButton && (
+					<div className='flex items-center'>
+						<Image src='/assets/prime-token.png' alt='PRIME' width={30} height={30} />
+						<span className='ml-2 text-xl'>${primeValue}</span>
+					</div>
+				)}
+			</div>
+			<div className='relative flex-1 text-center hidden md:flex md:justify-center'>
+				<h1 className='text-lg mt-2 font-bold uppercase'>Wayfinder Staking Dashboard</h1>
+			</div>
+			<div className='flex justify-end mr-2 cursor-pointer w-1/4'>
+				<Link href='https://github.com/krumil ' target='_blank' rel='noopener noreferrer'>
+					<Image src='/assets/github-mark-white.png' alt='GitHub' width={30} height={30} />
+				</Link>
+			</div>
+		</header>
+	);
+};
+
+export default Header;
