@@ -27,17 +27,24 @@ async function getPrimeBalance() {
 	return ethers.formatEther(balance);
 }
 
-async function getENSName(address: string) {
+async function getENSNameFromAddress(address: string, truncated = false) {
 	const ens = await provider.lookupAddress(address);
 	if (ens) {
 		return ens;
+	} else if (truncated) {
+		return `${address.slice(0, 6)}...${address.slice(-4)}`;
 	} else {
-		if (window.innerWidth < 768) {
-			return `${address.slice(0, 6)}...${address.slice(-4)}`;
-		} else {
-			return address;
-		}
+		return address;
 	}
 }
 
-export { initializeContract, getLatestBlockNumber, getPrimeBalance, getENSName };
+async function getAddressFromENS(ensName: string) {
+	const resolver = await provider.getResolver(ensName);
+	if (!resolver) {
+		return null;
+	}
+	const address = await resolver.getAddress();
+	return address;
+}
+
+export { initializeContract, getLatestBlockNumber, getPrimeBalance, getENSNameFromAddress, getAddressFromENS };

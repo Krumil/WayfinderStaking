@@ -1103,6 +1103,8 @@ const modifierByDays: ModifierByDays = {
 	1094: 84.96667526,
 	1095: 85.19438595
 };
+const promptSupply = 1e9;
+const stakingRewards = promptSupply * 0.4;
 
 function getModifierForDays(days: number) {
 	return modifierByDays[days] || 1;
@@ -1118,7 +1120,7 @@ function calculatePoints(deposit: Deposit): number {
 	}
 
 	const initialDurationInDays = (updatedTimestamp - createdTimestamp) / (60 * 60 * 24 * 1000);
-	const newDurationInDays = (endTimestamp - updatedTimestamp) / (60 * 60 * 24 * 1000);
+	const newDurationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24 * 1000);
 	const initialPoints = amountPoints * getModifierForDays(initialDurationInDays);
 	const newPoints = amountPoints * getModifierForDays(newDurationInDays);
 
@@ -1141,10 +1143,19 @@ const fetchPrimeValue = async () => {
 	try {
 		const response = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=PRIME");
 		const data = await response.json();
-		return data.data.rates.USD;
+		return parseFloat(data.data.rates.USD).toFixed(2);
 	} catch (err: any) {
 		console.error(err);
+		return "";
 	}
 };
 
-export { getModifierForDays, calculatePoints, calculateTotalPoints, sortUserDeposits, fetchPrimeValue };
+export {
+	calculatePoints,
+	calculateTotalPoints,
+	fetchPrimeValue,
+	getModifierForDays,
+	promptSupply,
+	sortUserDeposits,
+	stakingRewards
+};

@@ -7,12 +7,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { fetchPrimeValue } from "@/lib/utils";
 
 const Header = () => {
-	const [primeValue, setPrimeValue] = useState<number>(0);
+	const [primeValue, setPrimeValue] = useState<string>("");
 	const [hidden, setHidden] = useState<boolean>(false);
 	const scrollPosition = useRef(0);
 	const router = useRouter();
 	const pathname = usePathname();
 	const [showBackButton, setShowBackButton] = useState<boolean>(pathname !== "/");
+	const [scrollDirection, setScrollDirection] = useState<string>("");
 
 	useEffect(() => {
 		setShowBackButton(pathname !== "/");
@@ -28,24 +29,21 @@ const Header = () => {
 	}, []);
 
 	useEffect(() => {
-		const handleScroll = () => {
-			const currentScrollPosition = window.scrollY;
+		let lastScrollY = window.scrollY;
 
-			if (currentScrollPosition > scrollPosition.current) {
-				setHidden(true);
-			} else {
-				setHidden(false);
+		const updateScrollDirection = () => {
+			const scrollY = window.scrollY;
+			const direction = scrollY > lastScrollY ? "down" : "up";
+			if (direction !== scrollDirection && (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)) {
+				setScrollDirection(direction);
 			}
-
-			scrollPosition.current = currentScrollPosition;
+			lastScrollY = scrollY > 0 ? scrollY : 0;
 		};
-
-		window.addEventListener("scroll", handleScroll);
-
+		window.addEventListener("scroll", updateScrollDirection); // add event listener
 		return () => {
-			window.removeEventListener("scroll", handleScroll);
+			window.removeEventListener("scroll", updateScrollDirection); // clean up
 		};
-	}, []);
+	}, [scrollDirection]);
 
 	const handleBackClick = () => {
 		if (pathname !== "/") {
@@ -86,9 +84,12 @@ const Header = () => {
 			<div className='relative flex-1 text-center hidden md:flex md:justify-center'>
 				<h1 className='text-lg mt-2 font-bold uppercase'>Wayfinder Staking Dashboard</h1>
 			</div>
-			<div className='flex justify-end mr-2 cursor-pointer w-1/4'>
-				<Link href='https://github.com/krumil ' target='_blank' rel='noopener noreferrer'>
-					<Image src='/assets/github-mark-white.png' alt='GitHub' width={30} height={30} />
+			<div className='flex justify-end mr-2 cursor-pointer w-1/4 gap-2'>
+				<Link href='https://x.com/Simo1028' target='_blank' rel='noopener noreferrer'>
+					<Image src='/assets/x-logo.png' alt='PRIME' width={25} height={25} />
+				</Link>
+				<Link href='https://github.com/krumil' target='_blank' rel='noopener noreferrer'>
+					<Image src='/assets/github-mark-white.png' alt='GitHub' width={25} height={25} />
 				</Link>
 			</div>
 		</header>

@@ -71,8 +71,6 @@ const useDeposits = () => {
 							if (allDeposits[user]) {
 								const deposit = allDeposits[user].find(d => d.endTimestamp === updatedTimestamp);
 								if (deposit) {
-									const newDurationInDays =
-										(endTimestamp - deposit.createdTimestamp) / (60 * 60 * 24);
 									deposit.endTimestamp = endTimestamp;
 								}
 							}
