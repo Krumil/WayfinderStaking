@@ -40,6 +40,17 @@ const config: Config = {
 					"900": "#5d392a",
 					"950": "#341d14"
 				}
+			},
+			extend: {
+				keyframes: {
+					fadeIn: {
+						"0%": { opacity: 0 },
+						"100%": { opacity: 1 }
+					}
+				},
+				animation: {
+					fadeIn: "fadeIn 1s ease-in-out"
+				}
 			}
 		}
 	},

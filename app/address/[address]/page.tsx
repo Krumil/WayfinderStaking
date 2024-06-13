@@ -59,7 +59,7 @@ const AddressPage = () => {
 						userDeposits={userDeposits}
 						stakingRewards={stakingRewards}
 						allUsersTotalPoints={totalPoints}
-						ensName={ensName || address}
+						ensName={ensName || `${address.slice(0, 4)}...${address.slice(-4)}`}
 					/>
 				</div>
 			) : (

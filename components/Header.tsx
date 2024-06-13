@@ -87,7 +87,7 @@ const Header = () => {
 				{!showBackButton && (
 					<div className='flex items-center'>
 						<Image src='/assets/prime-token.png' alt='PRIME' width={30} height={30} />
-						<span className='ml-2 text-xl'>${primeValue}</span>
+						{primeValue && <span className='ml-2 text-xl animate-fadeIn'>${primeValue}</span>}
 					</div>
 				)}
 			</div>

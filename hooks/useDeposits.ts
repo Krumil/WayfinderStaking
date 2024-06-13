@@ -143,6 +143,7 @@ const useDeposits = () => {
 
 	useEffect(() => {
 		const fetchAllDeposits = async () => {
+			if (!contract || !contractBase) return;
 			const creationBlock = 20019797;
 			const creationBlockBase = 15628915;
 			const depositsFromContract = await fetchEventsInBatches(contract, creationBlock);
