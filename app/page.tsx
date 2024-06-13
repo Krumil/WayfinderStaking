@@ -90,7 +90,7 @@ const Home = () => {
 		<div className='flex flex-col items-center min-h-screen mb-10'>
 			{error && <p className='text-red-500'>{error}</p>}
 			<div className='text-2xl md:text-3xl text-center mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
-				<SlideUp delay={0.1}>
+				<SlideUp delay={0.5}>
 					<p className='flex flex-col justify-center items-center md:flex-row '>
 						There are currently{" "}
 						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
@@ -102,7 +102,7 @@ const Home = () => {
 						</span>{" "}
 					</p>
 				</SlideUp>
-				<SlideUp delay={1.5}>
+				<SlideUp delay={1}>
 					<p className='flex flex-col justify-center items-center md:flex-row mt-6 mb-8'>
 						This is about
 						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
@@ -111,7 +111,7 @@ const Home = () => {
 						of the total circulating supply
 					</p>
 				</SlideUp>
-				<SlideUp delay={3}>
+				<SlideUp delay={1.5}>
 					<AddressSearch
 						addressInput={addressInput}
 						setAddressInput={setAddressInput}
@@ -120,7 +120,7 @@ const Home = () => {
 				</SlideUp>
 			</div>
 			{sortedUserDeposits.length === 0 && (
-				<SlideUp delay={3.5}>
+				<SlideUp delay={2}>
 					<div className='flex flex-col justify-center items-center text-md font-bold text-center mt-4'>
 						<p className='text-gradient-transparent mb-4'>Loading more data...</p>
 						<div className='animate-spin rounded-full h-16 w-16 border-b-4 border-white-900'></div>
