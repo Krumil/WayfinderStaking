@@ -16,7 +16,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ addressInput, setAddressI
 			<div className='flex flex-col md:flex-row input-group items-center justify-center relative gap-2'>
 				<input
 					type='text'
-					placeholder='Enter address...'
+					placeholder='Enter address or ENS...'
 					value={addressInput}
 					onChange={e => setAddressInput(e.target.value)}
 					className='input w-full md:w-6/12 px-4 !bg-hampton-200 text-judge-gray-800 placeholder-judge-gray-600'
