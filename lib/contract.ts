@@ -54,7 +54,7 @@ async function getENSNameFromAddress(address: string, truncated = false) {
 	if (ens) {
 		return ens;
 	} else if (truncated) {
-		return `${address.slice(0, 6)}...${address.slice(-4)}`;
+		return `${address.slice(0, 4)}...${address.slice(-4)}`;
 	} else {
 		return address;
 	}
