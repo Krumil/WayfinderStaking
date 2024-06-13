@@ -61,7 +61,7 @@ const useDeposits = () => {
 		if (contract) {
 			try {
 				const latestBlock = await getLatestBlockNumber(chain);
-				const batchSize = chain === "mainnet" ? 10000 : 2000;
+				const batchSize = chain === "mainnet" ? 10000 : 10000;
 				const maxRetries = 3; // Number of retry attempts
 
 				const allDeposits: UserDeposits = {};

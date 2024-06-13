@@ -5,7 +5,7 @@ import primeAbiBase from "./primeAbiBase.json"; // ABI for the $PRIME token cont
 
 // Replace with your own Infura, Alchemy, or other provider URL
 const providerUrl = "https://ethereum-rpc.publicnode.com";
-const providerUrlBase = "https://mainnet.base.org";
+const providerUrlBase = "https://base-rpc.publicnode.com";
 const stakingContractAddress = "0x4a3826bd2e8a31956ad0397a49efde5e0d825238";
 const stakingContractAddressBase = "0x75a44a70ccb0e886e25084be14bd45af57915451";
 const primeTokenAddress = "0xb23d80f5FefcDDaa212212F028021B41DEd428CF";
@@ -60,7 +60,7 @@ async function getENSNameFromAddress(address: string, truncated = false) {
 	}
 }
 
-async function getAddressFromENS(ensName: string) {
+async function getAddressFromENS(ensName: string, truncated = false) {
 	if (!provider) {
 		await initializeContract();
 	}
@@ -69,7 +69,16 @@ async function getAddressFromENS(ensName: string) {
 		return null;
 	}
 	const address = await resolver.getAddress();
-	return address;
+
+	if (!address) {
+		return null;
+	}
+
+	if (truncated) {
+		return `${address.slice(0, 4)}...${address.slice(-4)}`;
+	} else {
+		return address;
+	}
 }
 
 export { initializeContract, getLatestBlockNumber, getPrimeBalance, getENSNameFromAddress, getAddressFromENS };

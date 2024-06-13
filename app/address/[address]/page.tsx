@@ -19,8 +19,9 @@ const AddressPage = () => {
 	useEffect(() => {
 		const fetchAddress = async () => {
 			const addressParam = params.address?.toLowerCase();
+			const isMobile = window.innerWidth < 768;
 			if (addressParam && addressParam.includes(".eth")) {
-				const hexAddress = await getAddressFromENS(addressParam);
+				const hexAddress = await getAddressFromENS(addressParam, isMobile);
 				if (!hexAddress) {
 					setAddress(null);
 					return;
@@ -31,7 +32,7 @@ const AddressPage = () => {
 			}
 
 			if (addressParam && !addressParam.includes(".eth")) {
-				const ensName = await getENSNameFromAddress(addressParam);
+				const ensName = await getENSNameFromAddress(addressParam, isMobile);
 				setAddress(addressParam.toLowerCase());
 				setEnsName(ensName.toLowerCase());
 				setFetchedEnsName(true);
@@ -59,7 +60,7 @@ const AddressPage = () => {
 						userDeposits={userDeposits}
 						stakingRewards={stakingRewards}
 						allUsersTotalPoints={totalPoints}
-						ensName={ensName || `${address.slice(0, 4)}...${address.slice(-4)}`}
+						ensName={ensName || address}
 					/>
 				</div>
 			) : (
