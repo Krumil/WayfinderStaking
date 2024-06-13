@@ -6,10 +6,6 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { fetchPrimeValue } from "@/lib/utils";
 
-interface HeaderProps {
-	scrollableDivRef: React.RefObject<HTMLDivElement>;
-}
-
 const Header = () => {
 	const [primeValue, setPrimeValue] = useState<string>("");
 	const [hidden, setHidden] = useState<boolean>(false);
@@ -17,7 +13,7 @@ const Header = () => {
 	const pathname = usePathname();
 	const [showBackButton, setShowBackButton] = useState<boolean>(pathname !== "/");
 	const scrollPosition = useRef(0);
-	const scrollableDiv = document.querySelector(".scrollable");
+	const scrollableDiv = useRef<HTMLElement | null>(null);
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -28,8 +24,8 @@ const Header = () => {
 		getPrimeValue();
 
 		const handleScroll = () => {
-			if (!scrollableDiv) return;
-			const currentScrollPosition = scrollableDiv.scrollTop;
+			if (!scrollableDiv.current) return;
+			const currentScrollPosition = scrollableDiv.current.scrollTop;
 
 			if (currentScrollPosition > scrollPosition.current) {
 				setHidden(true);
@@ -40,14 +36,20 @@ const Header = () => {
 			scrollPosition.current = currentScrollPosition;
 		};
 
-		if (scrollableDiv) {
-			scrollableDiv.addEventListener("scroll", handleScroll);
+		if (typeof window !== "undefined") {
+			scrollableDiv.current = document.querySelector(".scrollable");
+
+			if (scrollableDiv.current) {
+				scrollableDiv.current.addEventListener("scroll", handleScroll);
+			}
 		}
 
 		return () => {
-			document.body.removeEventListener("scroll", handleScroll);
+			if (scrollableDiv.current) {
+				scrollableDiv.current.removeEventListener("scroll", handleScroll);
+			}
 		};
-	}, [scrollableDiv]);
+	}, []);
 
 	useEffect(() => {
 		setShowBackButton(pathname !== "/");
