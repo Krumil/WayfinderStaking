@@ -104,7 +104,7 @@ const BuyMeACoffeeButton = () => {
 	return (
 		<div className='fixed bottom-4 right-4'>
 			<button
-				className='btn !bg-judge-gray-200 btn-circle shadow-lg relative !w-16 !h-16 flex items-center justify-center'
+				className='btn !bg-judge-gray-200 !btn-circle shadow-lg relative !w-16 !h-16 flex items-center justify-center'
 				onClick={() => setIsOpen(true)}>
 				<Image src='/assets/coffee.svg' alt='Buy Me a Coffee' width={30} height={30} />
 			</button>
@@ -112,7 +112,7 @@ const BuyMeACoffeeButton = () => {
 			{isOpen && (
 				<div className='fixed inset-0 flex items-center justify-center z-50'>
 					<div className='modal modal-open'>
-						<div className='modal-box !bg-judge-gray-800 max-w-xl'>
+						<div className='modal-box !bg-gradient-twitter-card max-w-xl'>
 							<div className='font-bold text-lg text-hampton-200'>Buy Me a Coffee (on Base)</div>
 							<div className='py-4'>
 								<div className='flex space-x-2 mb-2'>
