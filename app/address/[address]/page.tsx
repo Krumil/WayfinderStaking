@@ -19,9 +19,8 @@ const AddressPage = () => {
 	useEffect(() => {
 		const fetchAddress = async () => {
 			const addressParam = params.address?.toLowerCase();
-			const isMobile = window.innerWidth < 768;
 			if (addressParam && addressParam.includes(".eth")) {
-				const hexAddress = await getAddressFromENS(addressParam, isMobile);
+				const hexAddress = await getAddressFromENS(addressParam);
 				if (!hexAddress) {
 					setAddress(null);
 					return;
@@ -32,7 +31,7 @@ const AddressPage = () => {
 			}
 
 			if (addressParam && !addressParam.includes(".eth")) {
-				const ensName = await getENSNameFromAddress(addressParam, isMobile);
+				const ensName = await getENSNameFromAddress(addressParam);
 				setAddress(addressParam.toLowerCase());
 				setEnsName(ensName.toLowerCase());
 				setFetchedEnsName(true);

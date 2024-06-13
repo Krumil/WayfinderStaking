@@ -80,7 +80,6 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 
 	return (
 		<div className='p-4 max-w-4xl mx-auto'>
-			<p className='text-2xl font-bold flex justify-center mb-4 text-gradient-transparent'>Top Contributors</p>
 			<div className='grid grid-cols-1 gap-4'>
 				{userDeposits.map(([address, deposits], index) => {
 					const totalTokensStaked = deposits.reduce((acc, deposit) => acc + parseFloat(deposit.amount), 0);
@@ -92,25 +91,38 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 					}
 
 					return (
-						<SlideUp key={index} delay={index * 0.1}>
-							<div className='p-4 rounded-lg shadow-sm flex flex-col justify-start items-between bg-hampton-200 bg-opacity-20 cursor-pointer transition duration-200 hover:bg-opacity-30'>
-								<div className='flex justify-between items-center' onClick={() => handleClick(address)}>
-									<div>
-										<p className='text-2xl'>{ensName}</p>
+						<div key={index}>
+							{index === 0 && (
+								<p className='text-2xl font-bold flex justify-center mb-4 text-gradient-transparent'>
+									Top Contributors
+								</p>
+							)}
+
+							<SlideUp delay={index * 0.1}>
+								<div className='p-4 rounded-lg shadow-sm flex flex-col justify-start items-between bg-hampton-200 bg-opacity-20 cursor-pointer transition duration-200 hover:bg-opacity-30'>
+									<div
+										className='flex justify-between items-center'
+										onClick={() => handleClick(address)}>
+										<div>
+											<p className='text-2xl'>{ensName}</p>
+										</div>
+										<div className='text-end'>
+											<p className='text-xl font-bold'>
+												{formatNumberWithCommas(totalPoints)} CS
+											</p>
+										</div>
 									</div>
-									<div className='text-end'>
-										<p className='text-xl font-bold'>{formatNumberWithCommas(totalPoints)} CS</p>
+									<div className='text-judge-gray-200 text-sm md:text-xl'>
+										{formatNumberWithCommas(totalTokensStaked)} $PRIME for an average of{" "}
+										{(
+											userStakingData[address]?.averageStakingPeriod /
+											(60 * 60 * 24 * 1000)
+										).toFixed(0)}{" "}
+										days
 									</div>
 								</div>
-								<div className='text-judge-gray-200 text-sm md:text-xl'>
-									{formatNumberWithCommas(totalTokensStaked)} $PRIME for an average of{" "}
-									{(userStakingData[address]?.averageStakingPeriod / (60 * 60 * 24 * 1000)).toFixed(
-										0
-									)}{" "}
-									days
-								</div>
-							</div>
-						</SlideUp>
+							</SlideUp>
+						</div>
 					);
 				})}
 			</div>

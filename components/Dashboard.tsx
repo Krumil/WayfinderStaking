@@ -23,6 +23,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 	const [fdv, setFdv] = useState<number>(1000);
 	const [roi, setRoi] = useState<number>(0);
 	const [primePrice, setPrimePrice] = useState<number>(0);
+	const [titleCard, setTitleCard] = useState<string>("");
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -58,13 +59,22 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 		setFdv(parseFloat(e.target.value));
 	};
 
+	// use effect to display ensname if it contains .eth otherwise display the address
+	useEffect(() => {
+		if (ensName && ensName.includes(".eth")) {
+			setTitleCard(ensName);
+		} else {
+			setTitleCard(userAddress);
+		}
+	}, [ensName, userAddress]);
+
 	return (
 		<div className='max-w-3xl px-4 md:mx-auto'>
 			{error && <p className='text-red-500'>{error}</p>}
 			{userDeposits && (
 				<div className='bg-gradient-twitter-card overflow-hidden rounded-lg shadow-sm text-2xl font-bold flex flex-col justify-center items-start my-auto p-4 md:p-8'>
 					<SlideUp delay={0.1}>
-						<p className='text-4xl md:text-6xl mb-2 md:mb-4 text-gradient-transparent'>{ensName}</p>
+						<p className='text-4xl md:text-6xl mb-2 md:mb-4 text-gradient-transparent'>{titleCard}</p>
 					</SlideUp>
 					<SlideUp delay={0.2}>
 						<p className='my-4 md:my-8'>
