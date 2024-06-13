@@ -104,7 +104,7 @@ const BuyMeACoffeeButton = () => {
 	return (
 		<div className='fixed bottom-4 right-4'>
 			<button
-				className='btn !bg-judge-gray-200 !btn-circle shadow-lg relative !w-16 !h-16 flex items-center justify-center'
+				className='btn !bg-hampton-200 !btn-circle shadow-lg relative !w-16 !h-16 flex items-center justify-center'
 				onClick={() => setIsOpen(true)}>
 				<Image src='/assets/coffee.svg' alt='Buy Me a Coffee' width={30} height={30} />
 			</button>
