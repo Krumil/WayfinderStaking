@@ -3,21 +3,41 @@ import { ethers } from "ethers";
 import { initializeContract, getLatestBlockNumber } from "@/lib/contract";
 import { calculatePoints } from "@/lib/utils";
 
+interface Deposit {
+	amount: string;
+	endTimestamp: number;
+	createdTimestamp: number;
+	updatedTimestamp: number | null;
+	points: number;
+}
+
+interface UserDeposits {
+	[user: string]: Deposit[];
+}
+
+interface LocalStorageData {
+	timestamp: number;
+	deposits: UserDeposits;
+}
+
 const useDeposits = () => {
-	const [allDeposits, setAllDeposits] = useState<UserDeposits>(() => {
-		const savedData = localStorage.getItem("allDeposits");
-		if (savedData) {
-			const parsedData: LocalStorageData = JSON.parse(savedData);
-			const now = Date.now();
-			if (now - parsedData.timestamp < 60 * 1000) {
-				return parsedData.deposits;
-			}
-		}
-		return {};
-	});
+	const [allDeposits, setAllDeposits] = useState<UserDeposits>({});
 	const [contract, setContract] = useState<ethers.Contract | undefined>(undefined);
 	const [contractBase, setContractBase] = useState<ethers.Contract | undefined>(undefined);
 	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const savedData = localStorage.getItem("allDeposits");
+			if (savedData) {
+				const parsedData: LocalStorageData = JSON.parse(savedData);
+				const now = Date.now();
+				if (now - parsedData.timestamp < 60 * 1000) {
+					setAllDeposits(parsedData.deposits);
+				}
+			}
+		}
+	}, []);
 
 	useEffect(() => {
 		const initialize = async () => {
@@ -140,12 +160,14 @@ const useDeposits = () => {
 			setAllDeposits(mergedDeposits);
 
 			// Save to localStorage with a timestamp
-			const now = Date.now();
-			const localStorageData: LocalStorageData = {
-				timestamp: now,
-				deposits: mergedDeposits
-			};
-			localStorage.setItem("allDeposits", JSON.stringify(localStorageData));
+			if (typeof window !== "undefined") {
+				const now = Date.now();
+				const localStorageData: LocalStorageData = {
+					timestamp: now,
+					deposits: mergedDeposits
+				};
+				localStorage.setItem("allDeposits", JSON.stringify(localStorageData));
+			}
 		};
 
 		if (Object.keys(allDeposits).length === 0) {
