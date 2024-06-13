@@ -23,7 +23,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ addressInput, setAddressI
 				/>
 				<button
 					className={
-						"w-full md:w-1/12 btn !bg-hampton-200 !bg-opacity-20 !hover:bg-opacity-80 !disabled:opacity-30 !disabled:cursor-not-allowed"
+						"w-full md:w-1/12 btn !bg-hampton-200 !bg-opacity-20 !hover:bg-opacity-80 !disabled:opacity-30 !disabled:cursor-not-allowed !text-judge-gray-950"
 					}
 					onClick={handleSearch}
 					disabled={!isValidAddress}>

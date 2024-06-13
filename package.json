@@ -11,17 +11,24 @@
   "dependencies": {
     "@react-three/drei": "^9.106.0",
     "@react-three/fiber": "^8.16.8",
+    "@tanstack/react-query": "^5.45.0",
+    "@walletconnect/modal": "^2.6.2",
+    "@web3modal/wagmi": "^5.0.0",
     "axios": "^1.7.2",
     "chart.js": "^4.4.3",
     "chartjs-plugin-zoom": "^2.0.1",
     "class-variance-authority": "^0.7.0",
     "ethers": "^6.13.0",
     "highcharts-react-official": "^3.2.1",
+    "lucide-react": "^0.394.0",
     "next": "14.2.3",
     "react": "^18",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18",
-    "three": "^0.165.0"
+    "three": "^0.165.0",
+    "viem": "^2.13.8",
+    "wagmi": "^2.10.0",
+    "web3modal": "^1.9.12"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -9,7 +9,7 @@ import SlideUp from "@/components/ui/SlideUp";
 import useDeposits from "@/hooks/useDeposits";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { sortUserDeposits, fetchPrimeValue } from "../lib/utils";
+import { sortUserDeposits, fetchPrimeValue, isLocalStorageIsOutdated } from "../lib/utils";
 import { getPrimeBalance } from "../lib/contract";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -49,7 +49,6 @@ const Home = () => {
 		const getPrimeValue = async () => {
 			const value = await fetchPrimeValue();
 			setPrimeValue(parseFloat(value));
-			console.log(value);
 		};
 
 		getPrimeValue();
@@ -88,7 +87,7 @@ const Home = () => {
 	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
 
 	return (
-		<div className='flex flex-col items-center min-h-screen'>
+		<div className='flex flex-col items-center min-h-screen mb-10'>
 			{error && <p className='text-red-500'>{error}</p>}
 			<div className='text-2xl md:text-3xl text-center mt-[20vh] md:mt-[30vh] text-judge-gray-200'>
 				<SlideUp delay={0.1}>
@@ -122,21 +121,22 @@ const Home = () => {
 			</div>
 			{sortedUserDeposits.length === 0 && (
 				<SlideUp delay={3.5}>
-					<div className='text-md font-bold text-center mt-4'>
-						<p className='text-gradient-transparent'>Loading more data...</p>
+					<div className='flex flex-col justify-center items-center text-md font-bold text-center mt-4'>
+						<p className='text-gradient-transparent mb-4'>Loading more data...</p>
+						<div className='animate-spin rounded-full h-16 w-16 border-b-4 border-white-900'></div>
 					</div>
 				</SlideUp>
 			)}
 			{sortedUserDeposits.length > 0 && (
 				<div className='w-full'>
-					<SlideUp delay={0.1}>
+					<SlideUp delay={isLocalStorageIsOutdated("allDeposits") ? 0.1 : 4}>
 						<div className='mt-10'>
 							<Leaderboard userDeposits={sortedUserDeposits.slice(0, 10)} primeValue={primeValue} />
 						</div>
 					</SlideUp>
 					{Object.keys(allDeposits).length > 0 && (
 						<>
-							<SlideUp delay={1}>
+							<SlideUp delay={isLocalStorageIsOutdated("allDeposits") ? 0.5 : 4.5}>
 								<DistributionInfo
 									numberOfAddresses={sortedUserDeposits.length}
 									averageWeightedStakingPeriod={averageWeightedStakingPeriod}

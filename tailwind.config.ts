@@ -11,7 +11,7 @@ const config: Config = {
 			backgroundImage: {
 				"gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
 				"gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-				"gradient-twitter-card": "linear-gradient(45deg, rgba(73,73,73,0.5) 0%, rgba(207,197,145,0.5) 100%)"
+				"gradient-twitter-card": "linear-gradient(45deg, rgba(73,73,73,0.5) 0%, rgba(184, 182, 140, 0.5) 100%)"
 			},
 			colors: {
 				"judge-gray": {

@@ -12,14 +12,14 @@ const DistributionInfo = ({ numberOfAddresses, averageWeightedStakingPeriod }: D
 	const stakingRewardsInMillions = stakingRewards / 1_000_000;
 	return (
 		<div className='text-2xl md:text-3xl text-center mb-4 max-w-4xl mx-auto p-4'>
-			<SlideUp delay={0.1}>
+			{/* <SlideUp delay={0.1}>
 				<p className='text-center'>
 					Average Weighted Staking Period:{" "}
 					<span className='text-4xl font-bold text-gradient-transparent'>
 						<AnimatedNumber value={averageWeightedStakingPeriod} /> days
 					</span>
 				</p>
-			</SlideUp>
+			</SlideUp> */}
 			<SlideUp delay={2}>
 				<span className='text-4xl text-gradient-transparent font-bold'>
 					{" "}

@@ -98,8 +98,8 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 										<p className='text-xl font-bold'>{formatNumberWithCommas(totalPoints)} CS</p>
 									</div>
 								</div>
-								<div className='text-judge-gray-200 text-sm'>
-									Staked {formatNumberWithCommas(totalTokensStaked)} $PRIME for an avg of{" "}
+								<div className='text-judge-gray-200 text-sm md:text-xl'>
+									{formatNumberWithCommas(totalTokensStaked)} $PRIME for an average of{" "}
 									{(userStakingData[address]?.averageStakingPeriod / (60 * 60 * 24 * 1000)).toFixed(
 										0
 									)}{" "}

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
 import { calculateTotalPoints, stakingRewards } from "@/lib/utils";
 import useDeposits from "@/hooks/useDeposits";
+import { ethers } from "ethers";
 
 const AddressPage = () => {
 	const params = useParams<{ address: string }>();
@@ -33,6 +34,7 @@ const AddressPage = () => {
 				const ensName = await getENSNameFromAddress(addressParam);
 				setAddress(addressParam.toLowerCase());
 				setEnsName(ensName.toLowerCase());
+				setFetchedEnsName(true);
 			}
 		};
 
@@ -40,8 +42,8 @@ const AddressPage = () => {
 	}, [params]);
 
 	useEffect(() => {
-		if (allDeposits && address) {
-			setUserDeposits(allDeposits[address.toString()] || []);
+		if (allDeposits && address && ethers.isAddress(address)) {
+			setUserDeposits(allDeposits[address.toLowerCase()] || []);
 		}
 	}, [allDeposits, address]);
 

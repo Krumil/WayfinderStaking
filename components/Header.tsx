@@ -6,18 +6,18 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { fetchPrimeValue } from "@/lib/utils";
 
+interface HeaderProps {
+	scrollableDivRef: React.RefObject<HTMLDivElement>;
+}
+
 const Header = () => {
 	const [primeValue, setPrimeValue] = useState<string>("");
 	const [hidden, setHidden] = useState<boolean>(false);
-	const scrollPosition = useRef(0);
 	const router = useRouter();
 	const pathname = usePathname();
 	const [showBackButton, setShowBackButton] = useState<boolean>(pathname !== "/");
-	const [scrollDirection, setScrollDirection] = useState<string>("");
-
-	useEffect(() => {
-		setShowBackButton(pathname !== "/");
-	}, [pathname]);
+	const scrollPosition = useRef(0);
+	const scrollableDiv = document.querySelector(".scrollable");
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -26,24 +26,32 @@ const Header = () => {
 		};
 
 		getPrimeValue();
-	}, []);
+
+		const handleScroll = () => {
+			if (!scrollableDiv) return;
+			const currentScrollPosition = scrollableDiv.scrollTop;
+
+			if (currentScrollPosition > scrollPosition.current) {
+				setHidden(true);
+			} else {
+				setHidden(false);
+			}
+
+			scrollPosition.current = currentScrollPosition;
+		};
+
+		if (scrollableDiv) {
+			scrollableDiv.addEventListener("scroll", handleScroll);
+		}
+
+		return () => {
+			document.body.removeEventListener("scroll", handleScroll);
+		};
+	}, [scrollableDiv]);
 
 	useEffect(() => {
-		let lastScrollY = window.scrollY;
-
-		const updateScrollDirection = () => {
-			const scrollY = window.scrollY;
-			const direction = scrollY > lastScrollY ? "down" : "up";
-			if (direction !== scrollDirection && (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)) {
-				setScrollDirection(direction);
-			}
-			lastScrollY = scrollY > 0 ? scrollY : 0;
-		};
-		window.addEventListener("scroll", updateScrollDirection); // add event listener
-		return () => {
-			window.removeEventListener("scroll", updateScrollDirection); // clean up
-		};
-	}, [scrollDirection]);
+		setShowBackButton(pathname !== "/");
+	}, [pathname]);
 
 	const handleBackClick = () => {
 		if (pathname !== "/") {
@@ -84,9 +92,9 @@ const Header = () => {
 			<div className='relative flex-1 text-center hidden md:flex md:justify-center'>
 				<h1 className='text-lg mt-2 font-bold uppercase'>Wayfinder Staking Dashboard</h1>
 			</div>
-			<div className='flex justify-end mr-2 cursor-pointer w-1/4 gap-2'>
+			<div className='flex items-center justify-end mr-2 cursor-pointer w-1/4 gap-2'>
 				<Link href='https://x.com/Simo1028' target='_blank' rel='noopener noreferrer'>
-					<Image src='/assets/x-logo.png' alt='PRIME' width={25} height={25} />
+					<Image src='/assets/x-logo.png' alt='X' width={25} height={25} />
 				</Link>
 				<Link href='https://github.com/krumil' target='_blank' rel='noopener noreferrer'>
 					<Image src='/assets/github-mark-white.png' alt='GitHub' width={25} height={25} />

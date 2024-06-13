@@ -1150,9 +1150,22 @@ const fetchPrimeValue = async () => {
 	}
 };
 
+const isLocalStorageIsOutdated = (key: string) => {
+	const savedData = localStorage.getItem(key);
+	if (savedData) {
+		const parsedData: LocalStorageData = JSON.parse(savedData);
+		const now = Date.now();
+		if (now - parsedData.timestamp < 60 * 1000) {
+			return false;
+		}
+	}
+	return true;
+};
+
 export {
 	calculatePoints,
 	calculateTotalPoints,
+	isLocalStorageIsOutdated,
 	fetchPrimeValue,
 	getModifierForDays,
 	promptSupply,

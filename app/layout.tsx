@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
 import "./globals.css";
 import Header from "../components/Header";
-
+import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
+import DisclaimerDialog from "@/components/DisclaimerDialog";
 const inter = Oxanium({ weight: ["400", "500", "600", "700"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({
 				style={{ backgroundImage: `url(/assets/bg.png)` }}>
 				<Header />
 				<div className='background-gradient' />
-				<div className='flex-1 w-full overflow-y-auto'>{children}</div>
+				<div className='scrollable flex-1 w-full overflow-y-auto'>{children}</div>
+				<BuyMeACoffeeButton />
+				<DisclaimerDialog />
 			</body>
 		</html>
 	);

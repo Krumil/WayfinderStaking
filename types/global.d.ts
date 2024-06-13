@@ -17,3 +17,8 @@ interface Deposit {
 interface UserDeposits {
 	[user: string]: Deposit[];
 }
+
+interface LocalStorageData {
+	timestamp: number;
+	deposits: UserDeposits;
+}

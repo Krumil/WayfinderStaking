@@ -50,7 +50,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 			const stakedValue = stakedTokens * primePrice;
 			const roiValue = ((tokens * promptPrice) / stakedValue) * 100;
 			setUserTokensInUSD(tokens * promptPrice);
-			setRoi(roiValue / 3);
+			setRoi(roiValue);
 		}
 	}, [userDeposits, stakingRewards, allUsersTotalPoints, fdv, primePrice]);
 
@@ -62,7 +62,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 		<div className='max-w-3xl px-4 md:mx-auto'>
 			{error && <p className='text-red-500'>{error}</p>}
 			{userDeposits && (
-				<div className='bg-gradient-twitter-card rounded-lg shadow-sm text-2xl font-bold flex flex-col justify-center items-start my-auto p-4 md:p-8'>
+				<div className='bg-gradient-twitter-card overflow-hidden rounded-lg shadow-sm text-2xl font-bold flex flex-col justify-center items-start my-auto p-4 md:p-8'>
 					<SlideUp delay={0.1}>
 						<p className='text-4xl md:text-6xl mb-2 md:mb-4 text-gradient-transparent'>{ensName}</p>
 					</SlideUp>
@@ -84,7 +84,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 							<span className='text-gradient-transparent text-3xl'>
 								{parseFloat(userPercentage).toFixed(5)}%{" "}
 							</span>
-							of the total points, earning you approximately{" "}
+							of the total points, earning you{" "}
 							<span className='text-gradient-transparent text-3xl'>
 								<AnimatedNumber value={userTokens} />
 							</span>{" "}
@@ -96,7 +96,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 			<div>
 				{userDeposits && (
 					<div>
-						<SlideUp delay={0.4}>
+						<SlideUp delay={1}>
 							<div className='flex flex-row items-center justify-center my-8'>
 								<label className='text-xl grow text-end'>With a FDV of</label>
 								<input
@@ -108,13 +108,14 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 								<label className='text-xl grow'>millions</label>
 							</div>
 						</SlideUp>
-						<SlideUp delay={0.5}>
-							<p className='text-2xl'>
-								Those tokens are worth approximately{" "}
+						<SlideUp delay={2}>
+							<p className='text-2xl text-center'>
+								Those tokens will be worth{" "}
 								<span className='text-gradient-transparent'>
 									<AnimatedNumber value={userTokensInUSD} />
 								</span>{" "}
-								$USD, with a ROI of <span className='text-gradient-transparent'>{roi.toFixed(2)}%</span>
+								$USD, with an ROI of{" "}
+								<span className='text-gradient-transparent'>{roi.toFixed(2)}%</span>
 							</p>
 						</SlideUp>
 					</div>

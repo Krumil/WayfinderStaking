@@ -3,20 +3,28 @@ import { ethers } from "ethers";
 import { initializeContract, getLatestBlockNumber } from "@/lib/contract";
 import { calculatePoints } from "@/lib/utils";
 
-interface UserDeposits {
-	[user: string]: Deposit[];
-}
-
 const useDeposits = () => {
-	const [allDeposits, setAllDeposits] = useState<UserDeposits>({});
+	const [allDeposits, setAllDeposits] = useState<UserDeposits>(() => {
+		const savedData = localStorage.getItem("allDeposits");
+		if (savedData) {
+			const parsedData: LocalStorageData = JSON.parse(savedData);
+			const now = Date.now();
+			if (now - parsedData.timestamp < 60 * 1000) {
+				return parsedData.deposits;
+			}
+		}
+		return {};
+	});
 	const [contract, setContract] = useState<ethers.Contract | undefined>(undefined);
+	const [contractBase, setContractBase] = useState<ethers.Contract | undefined>(undefined);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		const initialize = async () => {
 			try {
-				const { stakingContract } = await initializeContract();
+				const { stakingContract, stakingContractBase } = await initializeContract();
 				setContract(stakingContract);
+				setContractBase(stakingContractBase);
 			} catch (err: any) {
 				setError(`Error initializing contract: ${err.message}`);
 			}
@@ -25,76 +33,127 @@ const useDeposits = () => {
 		initialize();
 	}, []);
 
-	useEffect(() => {
-		const fetchEventsInBatches = async () => {
-			if (contract) {
-				try {
-					const creationBlock = 20019797;
-					const latestBlock = await getLatestBlockNumber();
-					const batchSize = 5000; // Adjust batch size to avoid exceeding maximum block range
+	const fetchEventsInBatches = async (
+		contract: ethers.Contract | undefined,
+		creationBlock = 0,
+		chain = "mainnet"
+	) => {
+		if (contract) {
+			try {
+				const latestBlock = await getLatestBlockNumber(chain);
+				const batchSize = chain === "mainnet" ? 10000 : 2000;
+				const maxRetries = 3; // Number of retry attempts
 
-					const allDeposits: UserDeposits = {};
+				const allDeposits: UserDeposits = {};
 
-					for (let startBlock = creationBlock; startBlock <= latestBlock; startBlock += batchSize) {
-						const endBlock = Math.min(startBlock + batchSize - 1, latestBlock);
+				for (let startBlock = creationBlock; startBlock <= latestBlock; startBlock += batchSize) {
+					const endBlock = Math.min(startBlock + batchSize - 1, latestBlock);
 
-						const depositCreatedFilter = contract.filters.DepositCreated();
-						const depositExtendedFilter = contract.filters.DepositExtended();
+					const depositCreatedFilter = contract.filters.DepositCreated();
+					const depositExtendedFilter = contract.filters.DepositExtended();
 
-						const createdEvents = await contract.queryFilter(depositCreatedFilter, startBlock, endBlock);
-						const extendedEvents = await contract.queryFilter(depositExtendedFilter, startBlock, endBlock);
+					let createdEvents: any[] = [];
+					let extendedEvents: any[] = [];
+					let retries = 0;
+					let success = false;
 
-						createdEvents.forEach((event: any) => {
-							const user = event.args.user.toLowerCase(); // Ensure user address is in lowercase
-							const amount = ethers.formatEther(event.args.amount);
-							const endTimestamp = Number(event.args.endTimestamp) * 1000;
-							const createdTimestamp = Number(event.args.createdTimestamp) * 1000;
-
-							if (!allDeposits[user]) {
-								allDeposits[user] = [];
+					while (retries < maxRetries && !success) {
+						try {
+							createdEvents = await contract.queryFilter(depositCreatedFilter, startBlock, endBlock);
+							extendedEvents = await contract.queryFilter(depositExtendedFilter, startBlock, endBlock);
+							success = true;
+						} catch (err) {
+							retries += 1;
+							await new Promise(resolve => setTimeout(resolve, 1000));
+							if (retries >= maxRetries) {
+								throw new Error(
+									`Failed to fetch events for blocks ${startBlock} to ${endBlock} after ${maxRetries} attempts`
+								);
 							}
-
-							allDeposits[user].push({
-								amount,
-								endTimestamp,
-								createdTimestamp,
-								updatedTimestamp: null,
-								points: 0
-							});
-						});
-
-						extendedEvents.forEach((event: any) => {
-							const user = event.args.user.toLowerCase(); // Ensure user address is in lowercase
-							const endTimestamp = Number(event.args.endTimestamp) * 1000;
-							const updatedTimestamp = Number(event.args.updatedTimestamp) * 1000;
-
-							if (allDeposits[user]) {
-								const deposit = allDeposits[user].find(d => d.endTimestamp === updatedTimestamp);
-								if (deposit) {
-									deposit.endTimestamp = endTimestamp;
-								}
-							}
-						});
+						}
 					}
 
-					Object.keys(allDeposits).forEach(user => {
-						allDeposits[user].forEach(deposit => {
-							const points = calculatePoints(deposit);
-							deposit.points = points;
+					createdEvents.forEach((event: any) => {
+						const user = event.args.user.toLowerCase();
+						const amount = ethers.formatEther(event.args.amount);
+						const endTimestamp = Number(event.args.endTimestamp) * 1000;
+						const createdTimestamp = Number(event.args.createdTimestamp) * 1000;
+
+						if (!allDeposits[user]) {
+							allDeposits[user] = [];
+						}
+
+						allDeposits[user].push({
+							amount,
+							endTimestamp,
+							createdTimestamp,
+							updatedTimestamp: null,
+							points: 0
 						});
 					});
 
-					setAllDeposits(allDeposits);
-				} catch (err: any) {
-					setError(`Error fetching events: ${err.message}`);
+					extendedEvents.forEach((event: any) => {
+						const user = event.args.user.toLowerCase(); // Ensure user address is in lowercase
+						const endTimestamp = Number(event.args.endTimestamp) * 1000;
+						const updatedTimestamp = Number(event.args.updatedTimestamp) * 1000;
+
+						if (allDeposits[user]) {
+							const deposit = allDeposits[user].find(d => d.endTimestamp === updatedTimestamp);
+							if (deposit) {
+								deposit.endTimestamp = endTimestamp;
+							}
+						}
+					});
 				}
+
+				Object.keys(allDeposits).forEach(user => {
+					allDeposits[user].forEach(deposit => {
+						const points = calculatePoints(deposit);
+						deposit.points = points;
+					});
+				});
+
+				return allDeposits;
+			} catch (err: any) {
+				setError(`Error fetching events: ${err.message}`);
 			}
+		}
+		return {};
+	};
+
+	useEffect(() => {
+		const fetchAllDeposits = async () => {
+			const creationBlock = 20019797;
+			const creationBlockBase = 15628915;
+			const depositsFromContract = await fetchEventsInBatches(contract, creationBlock);
+			const depositsFromBaseContract = await fetchEventsInBatches(contractBase, creationBlockBase, "base");
+
+			const mergedDeposits: UserDeposits = { ...depositsFromContract };
+			Object.keys(depositsFromBaseContract).forEach(user => {
+				if (!mergedDeposits[user]) {
+					mergedDeposits[user] = depositsFromBaseContract[user];
+				} else {
+					mergedDeposits[user] = mergedDeposits[user].concat(depositsFromBaseContract[user]);
+				}
+			});
+
+			setAllDeposits(mergedDeposits);
+
+			// Save to localStorage with a timestamp
+			const now = Date.now();
+			const localStorageData: LocalStorageData = {
+				timestamp: now,
+				deposits: mergedDeposits
+			};
+			localStorage.setItem("allDeposits", JSON.stringify(localStorageData));
 		};
 
-		fetchEventsInBatches();
-	}, [contract]);
+		if (Object.keys(allDeposits).length === 0) {
+			fetchAllDeposits();
+		}
+	}, [contract, contractBase, allDeposits]);
 
-	return { allDeposits, contract, error };
+	return { allDeposits, contract, contractBase, error };
 };
 
 export default useDeposits;
