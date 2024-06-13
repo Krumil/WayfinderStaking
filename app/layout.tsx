@@ -21,7 +21,7 @@ export default function RootLayout({
 	return (
 		<html lang='en' data-theme='dark'>
 			<body
-				className={`${inter.className} bg-cover bg-center h-screen flex flex-col justify-center items-center overflow-hidden`}
+				className={`${inter.className} bg-cover bg-center text-white h-screen flex flex-col justify-center items-center overflow-hidden`}
 				style={{ backgroundImage: `url(/assets/bg.png)` }}>
 				<Header />
 				<div className='background-gradient' />
