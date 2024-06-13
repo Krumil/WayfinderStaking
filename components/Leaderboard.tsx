@@ -104,12 +104,12 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 										className='flex justify-between items-center'
 										onClick={() => handleClick(address)}>
 										<div>
-											<p className='text-2xl'>{ensName}</p>
+											<div className='text-2xl text-white'>{ensName}</div>
 										</div>
 										<div className='text-end'>
-											<p className='text-xl font-bold'>
+											<div className='text-xl font-bold text-white'>
 												{formatNumberWithCommas(totalPoints)} CS
-											</p>
+											</div>
 										</div>
 									</div>
 									<div className='text-judge-gray-200 text-sm md:text-xl'>
