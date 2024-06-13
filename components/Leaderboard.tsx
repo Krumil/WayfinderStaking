@@ -67,8 +67,7 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 
 		Object.keys(userStakingData).forEach(address => {
 			userStakingData[address].averageStakingPeriod =
-				userStakingData[address].weightedStaking /
-				(userStakingData[address].totalTokensStaked * userStakingData[address].numberOfdeposits);
+				userStakingData[address].weightedStaking / userStakingData[address].totalTokensStaked;
 		});
 
 		setUserStakingData(userStakingData);
