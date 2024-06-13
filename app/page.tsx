@@ -89,7 +89,7 @@ const Home = () => {
 	return (
 		<div className='flex flex-col items-center min-h-screen mb-10'>
 			{error && <p className='text-red-500'>{error}</p>}
-			<div className='text-2xl md:text-3xl text-center mt-[20vh] md:mt-[30vh] text-judge-gray-200'>
+			<div className='text-2xl md:text-3xl text-center mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
 				<SlideUp delay={0.1}>
 					<p className='flex flex-col justify-center items-center md:flex-row '>
 						There are currently{" "}
