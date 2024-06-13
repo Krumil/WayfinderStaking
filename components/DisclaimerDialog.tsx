@@ -29,10 +29,10 @@ const DisclaimerDialog = () => {
 						<div className='modal-box !bg-judge-gray-800 max-w-xl'>
 							<div className='font-bold text-lg text-hampton-200'>Disclaimer</div>
 							<div className='py-4 text-hampton-200'>
+								<p className='mb-4'>I am not affiliated with Wayfinder.</p>
 								<p className='mb-4'>
-									I am not affiliated with Wayfinder. The data provided on this site could be
-									incorrect. Please do not use it for making financial decisions. Always consult with
-									a financial advisor or conduct your own research before making investment choices.
+									The data provided on this site could be incorrect. Please do not use it for making
+									financial decisions.
 								</p>
 							</div>
 							<div className='modal-action'>
