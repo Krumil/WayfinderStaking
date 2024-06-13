@@ -9,7 +9,7 @@ import SlideUp from "@/components/ui/SlideUp";
 import useDeposits from "@/hooks/useDeposits";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { sortUserDeposits, fetchPrimeValue, isLocalStorageIsOutdated } from "../lib/utils";
+import { sortUserDeposits, fetchPrimeValue } from "../lib/utils";
 import { getPrimeBalance } from "../lib/contract";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -129,19 +129,15 @@ const Home = () => {
 			)}
 			{sortedUserDeposits.length > 0 && (
 				<div className='w-full'>
-					<SlideUp delay={isLocalStorageIsOutdated("allDeposits") ? 0.1 : 4}>
-						<div className='mt-10'>
-							<Leaderboard userDeposits={sortedUserDeposits.slice(0, 10)} primeValue={primeValue} />
-						</div>
-					</SlideUp>
+					<div className='mt-10'>
+						<Leaderboard userDeposits={sortedUserDeposits.slice(0, 10)} primeValue={primeValue} />
+					</div>
 					{Object.keys(allDeposits).length > 0 && (
 						<>
-							<SlideUp delay={isLocalStorageIsOutdated("allDeposits") ? 0.5 : 4.5}>
-								<DistributionInfo
-									numberOfAddresses={sortedUserDeposits.length}
-									averageWeightedStakingPeriod={averageWeightedStakingPeriod}
-								/>
-							</SlideUp>
+							<DistributionInfo
+								numberOfAddresses={sortedUserDeposits.length}
+								averageWeightedStakingPeriod={averageWeightedStakingPeriod}
+							/>
 							{/* <SlideUp delay={1}>
 								<DistributionChart pieData={pieData} />
 							</SlideUp> */}

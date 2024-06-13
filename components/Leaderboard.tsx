@@ -87,12 +87,16 @@ const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
 					const totalPoints = deposits.reduce((acc, deposit) => acc + deposit.points, 0);
 					const ensName = ensNames[address];
 
+					if (!ensName) {
+						return null;
+					}
+
 					return (
 						<SlideUp key={index} delay={index * 0.1}>
 							<div className='p-4 rounded-lg shadow-sm flex flex-col justify-start items-between bg-hampton-200 bg-opacity-20 cursor-pointer transition duration-200 hover:bg-opacity-30'>
 								<div className='flex justify-between items-center' onClick={() => handleClick(address)}>
 									<div>
-										<p className='text-2xl'>{ensName || address}</p>
+										<p className='text-2xl'>{ensName}</p>
 									</div>
 									<div className='text-end'>
 										<p className='text-xl font-bold'>{formatNumberWithCommas(totalPoints)} CS</p>
