@@ -64,7 +64,7 @@ const Dashboard = ({ userAddress, userDeposits, stakingRewards, allUsersTotalPoi
 		if (ensName && ensName.includes(".eth")) {
 			setTitleCard(ensName);
 		} else {
-			setTitleCard(userAddress);
+			setTitleCard(`${userAddress.slice(0, 6)}...${userAddress.slice(-6)}`);
 		}
 	}, [ensName, userAddress]);
 
