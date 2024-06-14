@@ -12,6 +12,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { sortUserDeposits, fetchPrimeValue } from "../lib/utils";
 import { getPrimeBalance } from "../lib/contract";
 import { useMemo, useEffect, useState } from "react";
+import { format as formatDate } from "date-fns";
 import { useRouter } from "next/navigation";
 import { startOfMonth, format } from "date-fns";
 
@@ -28,7 +29,16 @@ const Home = () => {
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
 	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] = useState<number>(0);
 	const [unlockData, setUnlockData] = useState<UnlockData>({ months: [], amounts: [] });
+	const [currentTime, setCurrentTime] = useState<string>(formatDate(new Date(), "PPpp"));
 	const sortedUserDeposits = useMemo(() => sortUserDeposits(allDeposits), [allDeposits]);
+
+	useEffect(() => {
+		const intervalId = setInterval(() => {
+			setCurrentTime(formatDate(new Date(), "PPpp"));
+		}, 1000);
+
+		return () => clearInterval(intervalId);
+	}, []);
 
 	const router = useRouter();
 
@@ -109,6 +119,9 @@ const Home = () => {
 	return (
 		<div className='flex flex-col items-center min-h-screen mb-10'>
 			{error && <p className='text-red-500'>{error}</p>}
+			<p className='text-xl md:text-2xl text-center mt-4 text-judge-gray-200'>
+				Current Time: {currentTime}
+			</p>
 			<div className='text-2xl md:text-3xl text-center mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
 				<SlideUp delay={0.5}>
 					<p className='flex flex-col justify-center items-center md:flex-row '>
