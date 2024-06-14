@@ -11,8 +11,9 @@ import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { sortUserDeposits, fetchPrimeValue } from "../lib/utils";
 import { getPrimeBalance } from "../lib/contract";
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { startOfMonth, format } from "date-fns";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -26,7 +27,8 @@ const Home = () => {
 	const [primeValue, setPrimeValue] = useState<number>(0);
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
 	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] = useState<number>(0);
-	const sortedUserDeposits = sortUserDeposits(allDeposits);
+	const [unlockData, setUnlockData] = useState<UnlockData>({ months: [], amounts: [] });
+	const sortedUserDeposits = useMemo(() => sortUserDeposits(allDeposits), [allDeposits]);
 
 	const router = useRouter();
 
@@ -63,6 +65,7 @@ const Home = () => {
 		let totalWeightedStakingTime = 0;
 		let totalStakedAmount = 0;
 		let numberOfDeposits = 0;
+		let unlockMap: { [key: string]: number } = {};
 
 		sortedUserDeposits.forEach(([user, deposits]) => {
 			deposits.forEach(deposit => {
@@ -71,6 +74,15 @@ const Home = () => {
 				totalWeightedStakingTime += amount * stakingTime;
 				totalStakedAmount += amount;
 				numberOfDeposits++;
+
+				const unlockDate = startOfMonth(new Date(deposit.endTimestamp));
+				const unlockMonth = format(unlockDate, "yyyy-MM");
+
+				if (unlockMap[unlockMonth]) {
+					unlockMap[unlockMonth] += amount;
+				} else {
+					unlockMap[unlockMonth] = amount;
+				}
 			});
 		});
 
@@ -78,6 +90,14 @@ const Home = () => {
 			? totalWeightedStakingTime / (numberOfDeposits * totalStakedAmount * 60 * 60 * 24)
 			: 0;
 		setAverageWeightedStakingPeriod(averageWeightedStakingPeriod);
+
+		const months = Object.keys(unlockMap).sort((a, b) => {
+			return new Date(a).getTime() - new Date(b).getTime();
+		});
+		const amounts = Object.values(unlockMap).sort((a, b) => {
+			return new Date(a).getTime() - new Date(b).getTime();
+		});
+		setUnlockData({ months, amounts });
 	}, [sortedUserDeposits]);
 
 	const handleSearch = () => {
@@ -139,7 +159,7 @@ const Home = () => {
 								averageWeightedStakingPeriod={averageWeightedStakingPeriod}
 							/>
 							{/* <SlideUp delay={1}>
-								<DistributionChart pieData={pieData} />
+								<DistributionChart weeks={unlockData.months} amounts={unlockData.amounts} />
 							</SlideUp> */}
 						</>
 					)}
