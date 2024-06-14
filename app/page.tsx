@@ -85,6 +85,7 @@ const Home = () => {
 	};
 
 	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
+	console.log("totalPercentageStaked", totalPercentageStaked);
 
 	return (
 		<div className='flex flex-col items-center min-h-screen mb-10'>
@@ -106,7 +107,7 @@ const Home = () => {
 					<p className='flex flex-col justify-center items-center md:flex-row mt-6 mb-8'>
 						This is about
 						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
-							<AnimatedNumber value={totalPercentageStaked} />%
+							<AnimatedNumber value={totalPercentageStaked} precision={2} />%
 						</span>{" "}
 						of the total circulating supply
 					</p>
