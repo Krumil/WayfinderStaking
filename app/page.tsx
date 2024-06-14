@@ -85,7 +85,6 @@ const Home = () => {
 	};
 
 	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
-	console.log("totalPercentageStaked", totalPercentageStaked);
 
 	return (
 		<div className='flex flex-col items-center min-h-screen mb-10'>
