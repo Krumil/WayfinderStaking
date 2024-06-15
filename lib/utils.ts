@@ -1114,13 +1114,13 @@ function calculatePoints(deposit: Deposit): number {
 	const amountPoints = parseFloat(deposit.amount);
 	const { createdTimestamp, endTimestamp, updatedTimestamp } = deposit;
 	if (!updatedTimestamp) {
-		const durationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24 * 1000);
+		const durationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24);
 		const modifier = getModifierForDays(Math.min(Math.floor(durationInDays), 1095));
 		return amountPoints * modifier;
 	}
 
-	const initialDurationInDays = (updatedTimestamp - createdTimestamp) / (60 * 60 * 24 * 1000);
-	const newDurationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24 * 1000);
+	const initialDurationInDays = (updatedTimestamp - createdTimestamp) / (60 * 60 * 24);
+	const newDurationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24);
 	const initialPoints = amountPoints * getModifierForDays(initialDurationInDays);
 	const newPoints = amountPoints * getModifierForDays(newDurationInDays);
 
@@ -1162,9 +1162,37 @@ const isLocalStorageIsOutdated = (key: string) => {
 	return true;
 };
 
+import { startOfDay, addDays, format } from "date-fns";
+
+const calculateDailySnapshots = (deposits: Deposit[]): DailySnapshot[] => {
+	// Create a map to store daily points
+	const dailyPointsMap: { [key: string]: number } = {};
+
+	deposits.forEach(deposit => {
+		const startDate = startOfDay(new Date(deposit.createdTimestamp));
+		const endDate = startOfDay(new Date(deposit.endTimestamp));
+
+		for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
+			const dateString = format(date, "yyyy-MM-dd");
+			if (dailyPointsMap[dateString]) {
+				dailyPointsMap[dateString] += deposit.points;
+			} else {
+				dailyPointsMap[dateString] = deposit.points;
+			}
+		}
+	});
+
+	// Convert map to array of snapshots
+	return Object.keys(dailyPointsMap).map(date => ({
+		date,
+		totalPoints: dailyPointsMap[date]
+	}));
+};
+
 export {
 	calculatePoints,
 	calculateTotalPoints,
+	calculateDailySnapshots,
 	isLocalStorageIsOutdated,
 	fetchPrimeValue,
 	getModifierForDays,

@@ -3,23 +3,6 @@ import { ethers } from "ethers";
 import { initializeContract, getLatestBlockNumber } from "@/lib/contract";
 import { calculatePoints } from "@/lib/utils";
 
-interface Deposit {
-	amount: string;
-	endTimestamp: number;
-	createdTimestamp: number;
-	updatedTimestamp: number | null;
-	points: number;
-}
-
-interface UserDeposits {
-	[user: string]: Deposit[];
-}
-
-interface LocalStorageData {
-	timestamp: number;
-	deposits: UserDeposits;
-}
-
 const useDeposits = () => {
 	const [allDeposits, setAllDeposits] = useState<UserDeposits>({});
 	const [contract, setContract] = useState<ethers.Contract | undefined>(undefined);
@@ -96,8 +79,9 @@ const useDeposits = () => {
 					createdEvents.forEach((event: any) => {
 						const user = event.args.user.toLowerCase();
 						const amount = ethers.formatEther(event.args.amount);
-						const endTimestamp = Number(event.args.endTimestamp) * 1000;
-						const createdTimestamp = Number(event.args.createdTimestamp) * 1000;
+						const endTimestamp = Number(event.args.endTimestamp);
+						const createdTimestamp = Number(event.args.createdTimestamp);
+						const depositIndex = Number(event.args.depositIndex);
 
 						if (!allDeposits[user]) {
 							allDeposits[user] = [];
@@ -107,6 +91,7 @@ const useDeposits = () => {
 							amount,
 							endTimestamp,
 							createdTimestamp,
+							depositIndex,
 							updatedTimestamp: null,
 							points: 0
 						});
@@ -114,13 +99,16 @@ const useDeposits = () => {
 
 					extendedEvents.forEach((event: any) => {
 						const user = event.args.user.toLowerCase(); // Ensure user address is in lowercase
-						const endTimestamp = Number(event.args.endTimestamp) * 1000;
-						const updatedTimestamp = Number(event.args.updatedTimestamp) * 1000;
+						const endTimestamp = Number(event.args.endTimestamp);
+						const updatedTimestamp = Number(event.args.updatedTimestamp);
+						const createdTimestamp = Number(event.args.createdTimestamp);
+						const depositIndex = Number(event.args.depositIndex);
 
 						if (allDeposits[user]) {
-							const deposit = allDeposits[user].find(d => d.endTimestamp === updatedTimestamp);
+							const deposit = allDeposits[user].find(d => d.depositIndex === depositIndex);
 							if (deposit) {
 								deposit.endTimestamp = endTimestamp;
+								deposit.updatedTimestamp = updatedTimestamp;
 							}
 						}
 					});
