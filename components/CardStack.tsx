@@ -37,7 +37,7 @@ const CardStack: FC<CardStackProps> = ({ cards }) => {
 				onIndexChange={handleIndexChange}>
 				{cards.map((card, index) => (
 					<div
-						className='animated-border mb-8 w-full max-w-[600px] !w-9/12 min-h-[400px] relative !overflow-visible'
+						className='animated-border mb-8 w-full max-w-[600px] !w-9/12 min-h-[400px] relative !overflow-visible !z-50'
 						key={index}>
 						{selectedIndex === index && (
 							<div

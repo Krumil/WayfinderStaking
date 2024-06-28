@@ -63,7 +63,7 @@ const Header = () => {
 
 	return (
 		<header
-			className={`fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${
+			className={`z-50 fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${
 				hidden ? "-translate-y-full" : "translate-y-0"
 			}`}>
 			<div className='flex items-center w-1/4'>
