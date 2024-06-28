@@ -5,14 +5,14 @@ import { getPrimeBalance } from "../../../lib/contract";
 // Route segment config
 export const runtime = "edge";
 
-// Image metadata
-export const alt = "WAYFINDER STAKING";
-export const size = {
-	width: 1100,
-	height: 630
-};
+// // Image metadata
+// export const alt = "WAYFINDER STAKING";
+// export const size = {
+// 	width: 1100,
+// 	height: 630
+// };
 
-export const contentType = "image/png";
+// export const contentType = "image/png";
 
 // Image generation
 export async function GET(request: Request) {
@@ -111,7 +111,8 @@ export async function GET(request: Request) {
 			</div>
 		),
 		{
-			...size,
+			width: 1100,
+			height: 630,
 			fonts: [
 				{
 					name: "Oxanium",
