@@ -136,7 +136,7 @@ const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores,
 							type='number'
 							value={fullyDiluitedValue}
 							onChange={handleFdvChange}
-							className='input input-sm mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right'
+							className='input input-sm !z-50 mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right'
 						/>
 					</div>
 					<div>
