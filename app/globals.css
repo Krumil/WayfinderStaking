@@ -65,9 +65,44 @@ body {
 }
 
 .text-gradient-transparent {
-	background: linear-gradient(45deg, #f6f6f0, #7f754f);
+	background: linear-gradient(45deg, #f6f6f0, #958d5d);
 	background-size: 400% 400%;
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	animation: gradient 10s ease infinite;
+}
+
+@layer components {
+	.animated-border {
+		@apply w-[60vmin] h-[50vmin] grid place-content-center text-white relative;
+		--border-angle: 0turn;
+		border-radius: 20px;
+		background: linear-gradient(45deg, rgba(73, 73, 73, 0.7) 0%, rgba(184, 182, 140, 0.7) 100%);
+	}
+
+	.animated-border::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: 20px;
+		padding: 2px;
+		background: conic-gradient(from var(--border-angle), transparent 25%, #f6f6f0, #7f754f 99%, transparent);
+		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		animation: bg-spin 3s linear infinite;
+	}
+
+	@keyframes bg-spin {
+		to {
+			--border-angle: 1turn;
+		}
+	}
+}
+
+@property --border-angle {
+	syntax: "<angle>";
+	inherits: true;
+	initial-value: 0turn;
 }

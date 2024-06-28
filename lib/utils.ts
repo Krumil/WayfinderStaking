@@ -1106,6 +1106,8 @@ const modifierByDays: ModifierByDays = {
 const promptSupply = 1e9;
 const stakingRewards = promptSupply * 0.4;
 
+const formatNumberWithCommas = (num: number) => num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
 function getModifierForDays(days: number) {
 	return modifierByDays[days] || 1;
 }
@@ -1189,13 +1191,23 @@ const calculateDailySnapshots = (deposits: Deposit[]): DailySnapshot[] => {
 	}));
 };
 
+const getApiUrl = (endpoint: string) => {
+	const apiUrl = process.env.NEXT_PUBLIC_ADDRESSES_API_URL + endpoint;
+	if (!apiUrl) {
+		throw new Error("NEXT_PUBLIC_ADDRESSES_API_URL is not defined");
+	}
+	return apiUrl;
+};
+
 export {
+	calculateDailySnapshots,
 	calculatePoints,
 	calculateTotalPoints,
-	calculateDailySnapshots,
-	isLocalStorageIsOutdated,
 	fetchPrimeValue,
+	formatNumberWithCommas,
+	getApiUrl,
 	getModifierForDays,
+	isLocalStorageIsOutdated,
 	promptSupply,
 	sortUserDeposits,
 	stakingRewards

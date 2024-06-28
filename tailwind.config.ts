@@ -41,16 +41,31 @@ const config: Config = {
 					"950": "#341d14"
 				}
 			},
-			extend: {
-				keyframes: {
-					fadeIn: {
-						"0%": { opacity: 0 },
-						"100%": { opacity: 1 }
-					}
-				},
-				animation: {
-					fadeIn: "fadeIn 1s ease-in-out"
+			animation: {
+				fade: "fadeIn .5s ease-in-out"
+			},
+
+			keyframes: {
+				fadeIn: {
+					from: { opacity: "0" },
+					to: { opacity: "1" }
 				}
+			},
+			animationDuration: {
+				"150ms": "150ms",
+				"200ms": "200ms",
+				"300ms": "300ms",
+				"400ms": "400ms",
+				"600ms": "600ms",
+				"900ms": "900ms"
+			},
+			animationDelay: {
+				"150ms": "150ms",
+				"200ms": "200ms",
+				"300ms": "300ms",
+				"400ms": "400ms",
+				"600ms": "600ms",
+				"900ms": "900ms"
 			}
 		}
 	},

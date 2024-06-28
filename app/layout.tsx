@@ -9,8 +9,18 @@ const Header = dynamic(() => import("@/components/Header"));
 const DisclaimerDialog = dynamic(() => import("@/components/DisclaimerDialog"));
 
 export const metadata: Metadata = {
-	title: "$PROMPT Staking Dashboard",
-	description: "$PROMPT Staking Dashboard"
+	openGraph: {
+		type: "article",
+		url: "https://wayfinder-staking.vercel.app/",
+		images: [
+			{
+				url: "http://localhost:3000/api/og"
+			}
+		]
+	},
+	twitter: {
+		images: ["http://localhost:3000/api/og"]
+	}
 };
 
 export default function RootLayout({

@@ -1,20 +1,22 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
 import Dashboard from "@/components/Dashboard";
-import { useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+// import useDeposits from "@/hooks/useDeposits";
+
+import { stakingRewards } from "@/lib/utils";
 import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
-import { calculateTotalPoints, stakingRewards } from "@/lib/utils";
-import useDeposits from "@/hooks/useDeposits";
-import { ethers } from "ethers";
+import { useParams } from "next/navigation";
 
 const AddressPage = () => {
 	const params = useParams<{ address: string }>();
-	const { allDeposits, error } = useDeposits();
-	const [userDeposits, setUserDeposits] = useState<Deposit[]>([]);
+	// const { allDeposits, error } = useDeposits();
+	// const [userDeposits, setUserDeposits] = useState<Deposit[]>([]);
 	const [address, setAddress] = useState<string | null>(null);
 	const [ensName, setEnsName] = useState<string | null>(null);
 	const [fetchedEnsName, setFetchedEnsName] = useState<Boolean>(false);
+	const [totalScore, setTotalScore] = useState<number>(0);
+	const [userData, setUserData] = useState<UserData | null>(null);
 
 	useEffect(() => {
 		const fetchAddress = async () => {
@@ -38,27 +40,50 @@ const AddressPage = () => {
 			}
 		};
 
+		const fetchTotalScore = async () => {
+			const response = await fetch("/api/data/global");
+			const data = await response.json();
+			setTotalScore(data.total_score);
+		};
+
+		fetchTotalScore();
 		fetchAddress();
-	}, [params]);
+	}, [address, params.address]);
 
 	useEffect(() => {
-		if (allDeposits && address && ethers.isAddress(address)) {
-			setUserDeposits(allDeposits[address.toLowerCase()] || []);
+		if (!address) {
+			return;
 		}
-	}, [allDeposits, address]);
+		const fetchUserData = async () => {
+			const response = await fetch("/api/data", {
+				method: "POST",
+				body: JSON.stringify({ address: address }),
+				headers: {
+					"Content-Type": "application/json"
+				}
+			});
+			const data = await response.json();
+			setUserData(data);
+		};
+		fetchUserData();
+	}, [address]);
 
-	const totalPoints = Object.values(allDeposits).reduce((acc, deposits) => acc + calculateTotalPoints(deposits), 0);
+	// useEffect(() => {
+	// 	if (allDeposits && address && ethers.isAddress(address)) {
+	// 		setUserDeposits(allDeposits[address.toLowerCase()] || []);
+	// 	}
+	// }, [allDeposits, address]);
 
 	return (
 		<div>
-			{error && <p className='text-red-500'>{error}</p>}
-			{address && fetchedEnsName && totalPoints !== 0 && stakingRewards !== 0 ? (
-				<div className='flex justify-center items-center h-screen'>
+			{address && fetchedEnsName && totalScore !== 0 && stakingRewards !== 0 && userData ? (
+				<div className='flex flex-col h-screen'>
 					<Dashboard
 						userAddress={address}
-						userDeposits={userDeposits}
+						userData={userData}
+						// userDeposits={userDeposits}
 						stakingRewards={stakingRewards}
-						allUsersTotalPoints={totalPoints}
+						allUsersTotalScores={totalScore}
 						ensName={ensName || address}
 					/>
 				</div>

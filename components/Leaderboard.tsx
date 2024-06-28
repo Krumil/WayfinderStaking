@@ -1,126 +1,66 @@
-import { useEffect, useState } from "react";
+"use client";
+
 import SlideUp from "@/components/ui/SlideUp";
 import { useRouter } from "next/navigation";
-import { getENSNameFromAddress } from "@/lib/contract";
-
-interface Deposit {
-	amount: string;
-	points: number;
-	createdTimestamp: number;
-	endTimestamp: number;
-}
-
+// import { getENSNameFromAddress } from "@/lib/contract";
+import { formatNumberWithCommas } from "@/lib/utils";
 interface LeaderboardProps {
-	userDeposits: [string, Deposit[]][];
-	primeValue: number;
+	addressesData: any[];
 }
 
-const Leaderboard = ({ userDeposits, primeValue }: LeaderboardProps) => {
+const Leaderboard = ({ addressesData }: LeaderboardProps) => {
 	const router = useRouter();
-	const [ensNames, setEnsNames] = useState<{ [address: string]: string | null }>({});
-	const [userStakingData, setUserStakingData] = useState<Record<string, { averageStakingPeriod: number }>>({});
-
-	const formatNumberWithCommas = (num: number) => num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-	useEffect(() => {
-		const fetchEnsNames = async () => {
-			const ensNamePromises = userDeposits.map(async ([address]) => {
-				const isMobile = window.innerWidth < 768;
-				const ensName = await getENSNameFromAddress(address, isMobile);
-				return [address, ensName] as [string, string | null];
-			});
-			const ensNameResults = await Promise.all(ensNamePromises);
-			const ensNameMap = ensNameResults.reduce((acc, [address, ensName]) => {
-				acc[address] = ensName;
-				return acc;
-			}, {} as { [address: string]: string | null });
-			setEnsNames(ensNameMap);
-		};
-
-		fetchEnsNames();
-
-		let userStakingData = {} as Record<
-			string,
-			{
-				weightedStaking: number;
-				numberOfdeposits: number;
-				totalTokensStaked: number;
-				averageStakingPeriod: number;
-			}
-		>;
-		userDeposits.forEach(([address, deposits]) => {
-			deposits.map(deposit => {
-				if (!userStakingData[address]) {
-					userStakingData[address] = {
-						weightedStaking: 0,
-						numberOfdeposits: 0,
-						totalTokensStaked: 0,
-						averageStakingPeriod: 0
-					};
-				}
-				const depositWeigth = (deposit.endTimestamp - deposit.createdTimestamp) * parseFloat(deposit.amount);
-				userStakingData[address].weightedStaking += depositWeigth;
-				userStakingData[address].numberOfdeposits++;
-				userStakingData[address].totalTokensStaked += parseFloat(deposit.amount);
-			});
-		});
-
-		Object.keys(userStakingData).forEach(address => {
-			userStakingData[address].averageStakingPeriod =
-				userStakingData[address].weightedStaking / userStakingData[address].totalTokensStaked;
-		});
-
-		setUserStakingData(userStakingData);
-	}, [userDeposits]);
 
 	const handleClick = (address: string) => {
 		router.push(`/address/${address}`);
 	};
 
+	const calculateTotalScore = (data: any) => {
+		const scores = data.scores || { prime_score: 0, community_score: 0, initialization_score: 0 };
+		const baseScores = data.base_scores || { prime_score: 0, community_score: 0, initialization_score: 0 };
+
+		const primeScore = scores.prime_score + baseScores.prime_score;
+		const communityScore = scores.community_score + baseScores.community_score;
+		const initializationScore = scores.initialization_score + baseScores.initialization_score;
+
+		return primeScore + communityScore + initializationScore;
+	};
+
+	// create sorted list of addresses based on total score
+	const sortedAddresses = addressesData.sort((a, b) => calculateTotalScore(b.data) - calculateTotalScore(a.data));
+	const topAddresses = sortedAddresses.slice(0, 10);
+
+	// get ENS names for addresses
+	// topAddresses.forEach(async item => {
+	// 	const ensName = await getENSNameFromAddress(item.address, true);
+	// 	item.address = ensName || item.address;
+	// });
+
 	return (
 		<div className='p-4 max-w-4xl mx-auto'>
+			<h2 className='text-2xl font-bold flex justify-center mb-4'>Top Stakers</h2>
 			<div className='grid grid-cols-1 gap-4'>
-				{userDeposits.map(([address, deposits], index) => {
-					const totalTokensStaked = deposits.reduce((acc, deposit) => acc + parseFloat(deposit.amount), 0);
-					const totalPoints = deposits.reduce((acc, deposit) => acc + deposit.points, 0);
-					const ensName = ensNames[address];
-
-					if (!ensName) {
-						return null;
-					}
-
-					return (
-						<div key={index}>
-							{index === 0 && (
-								<p className='text-2xl font-bold flex justify-center mb-4 text-gradient-transparent'>
-									Top Contributors
-								</p>
-							)}
-
-							<SlideUp delay={index * 0.1}>
-								<div className='p-4 rounded-lg shadow-sm flex flex-col justify-start items-between bg-hampton-200 bg-opacity-20 cursor-pointer transition duration-200 hover:bg-opacity-30'>
-									<div
-										className='flex justify-between items-center'
-										onClick={() => handleClick(address)}>
-										<div>
-											<div className='text-2xl'>{ensName}</div>
-										</div>
-										<div className='text-end'>
-											<div className='text-xl font-bold'>
-												{formatNumberWithCommas(totalPoints)} CS
-											</div>
-										</div>
-									</div>
-									<div className='text-judge-gray-200 text-sm md:text-xl'>
-										{formatNumberWithCommas(totalTokensStaked)} $PRIME for an average of{" "}
-										{(userStakingData[address]?.averageStakingPeriod / (60 * 60 * 24)).toFixed(0)}{" "}
-										days
-									</div>
+				{topAddresses.map((item, index) => (
+					<SlideUp key={index} delay={index * 0.3 + 0.5}>
+						<div
+							className='p-4 border rounded-lg shadow-sm flex flex-row justify-between cursor-pointer'
+							onClick={() => handleClick(item.address)}>
+							<div>
+								<div className='text-2xl'>{item.address}</div>
+							</div>
+							<div className='text-end'>
+								<div className='text-xl font-bold'>
+									{formatNumberWithCommas(calculateTotalScore(item.data))} CS
 								</div>
-							</SlideUp>
+							</div>
+							{item.prime_amount_cached && (
+								<div className='text-judge-gray-200 text-sm md:text-xl'>
+									{item.prime_amount_cached.toFixed(2).toLocaleString()} $PRIME
+								</div>
+							)}
 						</div>
-					);
-				})}
+					</SlideUp>
+				))}
 			</div>
 		</div>
 	);

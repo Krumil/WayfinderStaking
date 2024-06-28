@@ -2,35 +2,44 @@
 
 import "daisyui/dist/full.css";
 import AddressSearch from "@/components/AddressSearch";
-import DistributionChart from "@/components/DistributionChart";
-import DistributionInfo from "@/components/DistributionInfo";
+// import DistributionChart from "@/components/DistributionChart";
+// import DistributionInfo from "@/components/DistributionInfo";
 import Leaderboard from "@/components/Leaderboard";
 import SlideUp from "@/components/ui/SlideUp";
-import useDeposits from "@/hooks/useDeposits";
+
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { sortUserDeposits, fetchPrimeValue } from "../lib/utils";
+import { fetchPrimeValue } from "../lib/utils";
 import { getPrimeBalance } from "../lib/contract";
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { startOfMonth, format } from "date-fns";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DEFAULT_PRIME_SUPPLY = 1111111111;
 
 const Home = () => {
-	const { allDeposits, error } = useDeposits();
 	const [addressInput, setAddressInput] = useState<string>("");
+	const [addressesData, setAddressesData] = useState<any[]>([]);
+	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] = useState<number>(0);
+	const [loading, setLoading] = useState<boolean>(true);
 	const [primeBalance, setPrimeBalance] = useState<number>(0);
 	const [primeSupply, setPrimeSupply] = useState<number>(DEFAULT_PRIME_SUPPLY);
 	const [primeValue, setPrimeValue] = useState<number>(0);
+	const [showLeaderboard, setShowLeaderboard] = useState(false);
+	const [totalPercentageStaked, setTotalPercentageStaked] = useState<number>(0);
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
-	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] = useState<number>(0);
 	const [unlockData, setUnlockData] = useState<UnlockData>({ months: [], amounts: [] });
-	const sortedUserDeposits = useMemo(() => sortUserDeposits(allDeposits), [allDeposits]);
 
 	const router = useRouter();
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setShowLeaderboard(true);
+		}, 2000);
+
+		return () => clearTimeout(timer);
+	}, []);
 
 	useEffect(() => {
 		const fetchPrimeBalance = async () => {
@@ -46,70 +55,45 @@ const Home = () => {
 			}
 		};
 
-		fetchPrimeBalance();
-
 		const getPrimeValue = async () => {
 			const value = await fetchPrimeValue();
 			setPrimeValue(parseFloat(value));
 		};
 
+		const fetchAddressesData = async () => {
+			try {
+				const response = await fetch("/api/data");
+				const data = await response.json();
+				setAddressesData(data);
+				setLoading(false);
+			} catch (err) {
+				console.error("Error fetching addresses data:", err);
+				setLoading(false);
+			}
+		};
+
+		fetchPrimeBalance();
 		getPrimeValue();
+		fetchAddressesData();
 	}, []);
+
+	useEffect(() => {
+		const totalPercentageStaked = (primeBalance / primeSupply) * 100;
+		setTotalPercentageStaked(totalPercentageStaked);
+	}, [primeBalance, primeSupply]);
 
 	useEffect(() => {
 		const totalValue = primeBalance * primeValue;
 		setTotalStakedValueInUSD(totalValue);
 	}, [primeBalance, primeValue]);
 
-	useEffect(() => {
-		let totalWeightedStakingTime = 0;
-		let totalStakedAmount = 0;
-		let numberOfDeposits = 0;
-		let unlockMap: { [key: string]: number } = {};
-
-		sortedUserDeposits.forEach(([user, deposits]) => {
-			deposits.forEach(deposit => {
-				const stakingTime = deposit.endTimestamp - deposit.createdTimestamp;
-				const amount = parseFloat(deposit.amount);
-				totalWeightedStakingTime += amount * stakingTime;
-				totalStakedAmount += amount;
-				numberOfDeposits++;
-
-				const unlockDate = startOfMonth(new Date(deposit.endTimestamp));
-				const unlockMonth = format(unlockDate, "yyyy-MM");
-
-				if (unlockMap[unlockMonth]) {
-					unlockMap[unlockMonth] += amount;
-				} else {
-					unlockMap[unlockMonth] = amount;
-				}
-			});
-		});
-
-		const averageWeightedStakingPeriod = totalStakedAmount
-			? totalWeightedStakingTime / (numberOfDeposits * totalStakedAmount * 60 * 60 * 24)
-			: 0;
-		setAverageWeightedStakingPeriod(averageWeightedStakingPeriod);
-
-		const months = Object.keys(unlockMap).sort((a, b) => {
-			return new Date(a).getTime() - new Date(b).getTime();
-		});
-		const amounts = Object.values(unlockMap).sort((a, b) => {
-			return new Date(a).getTime() - new Date(b).getTime();
-		});
-		setUnlockData({ months, amounts });
-	}, [sortedUserDeposits]);
-
 	const handleSearch = () => {
 		router.push(`/address/${addressInput}`);
 	};
 
-	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
-
 	return (
 		<div className='flex flex-col items-center min-h-screen mb-10'>
-			{error && <p className='text-red-500'>{error}</p>}
-			<div className='text-2xl md:text-3xl text-center mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
+			<div className='text-2xl md:text-3xl mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
 				<SlideUp delay={0.5}>
 					<p className='flex flex-col justify-center items-center md:flex-row '>
 						There are currently{" "}
@@ -139,7 +123,7 @@ const Home = () => {
 					/>
 				</SlideUp>
 			</div>
-			{sortedUserDeposits.length === 0 && (
+			{loading && (
 				<SlideUp delay={2}>
 					<div className='flex flex-col justify-center items-center text-md font-bold text-center mt-4'>
 						<p className='text-gradient-transparent mb-4'>Loading more data...</p>
@@ -147,23 +131,14 @@ const Home = () => {
 					</div>
 				</SlideUp>
 			)}
-			{sortedUserDeposits.length > 0 && (
-				<div className='w-full'>
-					<div className='mt-10'>
-						<Leaderboard userDeposits={sortedUserDeposits.slice(0, 10)} primeValue={primeValue} />
+			{!loading && addressesData.length > 0 && showLeaderboard && (
+				<SlideUp delay={0.5} duration={1}>
+					<div className='w-full'>
+						<div className='mt-10'>
+							<Leaderboard addressesData={addressesData} />
+						</div>
 					</div>
-					{Object.keys(allDeposits).length > 0 && (
-						<>
-							<DistributionInfo
-								numberOfAddresses={sortedUserDeposits.length}
-								averageWeightedStakingPeriod={averageWeightedStakingPeriod}
-							/>
-							{/* <SlideUp delay={1}>
-								<DistributionChart weeks={unlockData.months} amounts={unlockData.amounts} />
-							</SlideUp> */}
-						</>
-					)}
-				</div>
+				</SlideUp>
 			)}
 		</div>
 	);

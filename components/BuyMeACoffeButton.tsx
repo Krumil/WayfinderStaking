@@ -102,7 +102,7 @@ const BuyMeACoffeeButton = () => {
 	};
 
 	return (
-		<div className='fixed bottom-4 right-4'>
+		<div className='fixed bottom-4 right-8'>
 			<button
 				className='btn !bg-hampton-200 !btn-circle shadow-lg relative !w-16 !h-16 flex items-center justify-center'
 				onClick={() => setIsOpen(true)}>
