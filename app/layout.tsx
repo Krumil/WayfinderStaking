@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
-import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
+// import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
 
 const inter = Oxanium({ weight: ["400", "500", "600", "700"], subsets: ["latin"] });
 const Header = dynamic(() => import("@/components/Header"));
@@ -36,7 +36,7 @@ export default function RootLayout({
 				<Header />
 				<div className='background-gradient' />
 				<div className='scrollable flex-1 w-full overflow-y-auto'>{children}</div>
-				<BuyMeACoffeeButton />
+				{/* <BuyMeACoffeeButton /> */}
 				<DisclaimerDialog />
 			</body>
 		</html>
