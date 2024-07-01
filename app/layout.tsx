@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 		url: "https://wayfinder-staking.vercel.app/",
 		images: [
 			{
-				url: "http://localhost:3000/api/og"
+				url: "https://wayfinder-staking.vercel.app//api/og"
 			}
 		]
 	},
 	twitter: {
-		images: ["http://localhost:3000/api/og"]
+		images: ["https://wayfinder-staking.vercel.app/api/og"]
 	}
 };
 

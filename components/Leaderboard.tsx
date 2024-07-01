@@ -2,7 +2,7 @@
 
 import SlideUp from "@/components/ui/SlideUp";
 import { useRouter } from "next/navigation";
-// import { getENSNameFromAddress } from "@/lib/contract";
+import { getENSNameFromAddress } from "@/lib/contract";
 import { formatNumberWithCommas } from "@/lib/utils";
 interface LeaderboardProps {
 	addressesData: any[];
@@ -31,10 +31,10 @@ const Leaderboard = ({ addressesData }: LeaderboardProps) => {
 	const topAddresses = sortedAddresses.slice(0, 10);
 
 	// get ENS names for addresses
-	// topAddresses.forEach(async item => {
-	// 	const ensName = await getENSNameFromAddress(item.address, true);
-	// 	item.address = ensName || item.address;
-	// });
+	topAddresses.forEach(async item => {
+		const ensName = await getENSNameFromAddress(item.address, true);
+		item.address = ensName || item.address;
+	});
 
 	return (
 		<div className='p-4 max-w-4xl mx-auto'>
