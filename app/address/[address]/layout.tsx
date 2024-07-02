@@ -47,10 +47,10 @@ export async function generateMetadata({
 		openGraph: {
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			url: `${process.env.NEXT_PUBLIC_API_URL}/address/${addressParam}`,
+			url: `https://wayfinder-staking.vercel.app/address/${addressParam}`,
 			images: [
 				{
-					url: `https://promptcachingdashboardserver.onrender.com/api/og/${addressParam}`,
+					url: `https://wayfinder-staking.vercel.app/api/og/${addressParam}`,
 				},
 			],
 		},
@@ -58,9 +58,7 @@ export async function generateMetadata({
 			card: "summary_large_image",
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			images: [
-				`https://promptcachingdashboardserver.onrender.com/api/og/${addressParam}`,
-			],
+			images: [`https://wayfinder-staking.vercel.app/api/og/${addressParam}`],
 		},
 	};
 }
