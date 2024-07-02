@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 // import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
 
 const inter = Oxanium({
