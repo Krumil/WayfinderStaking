@@ -10,7 +10,7 @@ const metadata = {
 	name: "Web3Modal Example",
 	description: "Web3Modal Example",
 	url: "https://web3modal.com",
-	icons: ["https://avatars.githubusercontent.com/u/37784886"]
+	icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
 export const config = defaultWagmiConfig({
@@ -19,6 +19,6 @@ export const config = defaultWagmiConfig({
 	metadata,
 	ssr: true,
 	storage: createStorage({
-		storage: cookieStorage
-	})
+		storage: cookieStorage,
+	}),
 });

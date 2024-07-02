@@ -9,14 +9,19 @@ interface SlideUpProps {
 	duration?: number;
 }
 
-const SlideUp: React.FC<SlideUpProps> = ({ children, delay, duration = 0.5 }) => {
+const SlideUp: React.FC<SlideUpProps> = ({
+	children,
+	delay,
+	duration = 0.5,
+}) => {
 	return (
-		<div className='w-full overflow-hidden'>
+		<div className="w-full overflow-hidden">
 			<motion.div
-				className='w-full'
+				className="w-full"
 				initial={{ y: "100%", opacity: 0 }}
 				animate={{ y: 0, opacity: 1 }}
-				transition={{ duration: duration, delay }}>
+				transition={{ duration: duration, delay }}
+			>
 				{children}
 			</motion.div>
 		</div>

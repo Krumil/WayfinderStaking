@@ -20,12 +20,12 @@ export function AnimatedNumber({
 	stiffness = 75,
 	damping = 15,
 	precision = 0,
-	format = num => num.toLocaleString(),
+	format = (num) => num.toLocaleString(),
 	onAnimationStart,
-	onAnimationComplete
+	onAnimationComplete,
 }: AnimatedNumberProps) {
 	const spring = useSpring(value, { mass, stiffness, damping });
-	const display: MotionValue<string> = useTransform(spring, current =>
+	const display: MotionValue<string> = useTransform(spring, (current) =>
 		format(parseFloat(current.toFixed(precision)))
 	);
 

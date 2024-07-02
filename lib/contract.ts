@@ -23,10 +23,23 @@ async function initializeContract() {
 	provider = new ethers.JsonRpcProvider(providerUrl);
 	providerBase = new ethers.JsonRpcProvider(providerUrlBase);
 	stakingContract = new ethers.Contract(stakingContractAddress, abi, provider);
-	stakingContractBase = new ethers.Contract(stakingContractAddressBase, abi, providerBase);
+	stakingContractBase = new ethers.Contract(
+		stakingContractAddressBase,
+		abi,
+		providerBase
+	);
 	primeContract = new ethers.Contract(primeTokenAddress, primeAbi, provider);
-	primeContractBase = new ethers.Contract(primeTokenAddressBase, primeAbiBase, providerBase);
-	return { stakingContract, stakingContractBase, primeContract, primeContractBase };
+	primeContractBase = new ethers.Contract(
+		primeTokenAddressBase,
+		primeAbiBase,
+		providerBase
+	);
+	return {
+		stakingContract,
+		stakingContractBase,
+		primeContract,
+		primeContractBase,
+	};
 }
 
 async function getLatestBlockNumber(chain = "mainnet") {
@@ -45,7 +58,9 @@ async function getPrimeBalance() {
 		await initializeContract();
 	}
 	const balance = await primeContract.balanceOf(stakingContractAddress);
-	const balanceBase = await primeContractBase.balanceOf(stakingContractAddressBase);
+	const balanceBase = await primeContractBase.balanceOf(
+		stakingContractAddressBase
+	);
 	return ethers.formatEther(balance + balanceBase);
 }
 
@@ -84,11 +99,24 @@ async function getAddressFromENS(ensName: string, truncated = false) {
 	}
 }
 
-async function fetchLogsInBatches(contractAddress: string, fromBlock: number, toBlock: number, batchSize: number) {
+async function fetchLogsInBatches(
+	contractAddress: string,
+	fromBlock: number,
+	toBlock: number,
+	batchSize: number
+) {
 	const allLogs = [];
-	for (let startBlock = fromBlock; startBlock <= toBlock; startBlock += batchSize) {
+	for (
+		let startBlock = fromBlock;
+		startBlock <= toBlock;
+		startBlock += batchSize
+	) {
 		const endBlock = Math.min(startBlock + batchSize - 1, toBlock);
-		const filter = { address: contractAddress, fromBlock: startBlock, toBlock: endBlock };
+		const filter = {
+			address: contractAddress,
+			fromBlock: startBlock,
+			toBlock: endBlock,
+		};
 		const logs = await provider.getLogs(filter);
 		allLogs.push(...logs);
 	}
@@ -105,26 +133,33 @@ async function getInteractingAddresses(
 	}
 
 	const toBlock = await getLatestBlockNumber();
-	const logs = await fetchLogsInBatches(contractAddress, fromBlock, toBlock, batchSize);
+	const logs = await fetchLogsInBatches(
+		contractAddress,
+		fromBlock,
+		toBlock,
+		batchSize
+	);
 
-	const txHashes = Array.from(new Set(logs.map(log => log.transactionHash))); // Get unique transaction hashes
+	const txHashes = Array.from(new Set(logs.map((log) => log.transactionHash))); // Get unique transaction hashes
 
 	const fetchReceipt = async (txHash: string) => {
 		return await provider.getTransactionReceipt(txHash);
 	};
 
-	const receipts = await Promise.all(txHashes.map(txHash => fetchReceipt(txHash)));
+	const receipts = await Promise.all(
+		txHashes.map((txHash) => fetchReceipt(txHash))
+	);
 
 	const addresses = Array.from(
 		new Set(
-			receipts.map(receipt => {
+			receipts.map((receipt) => {
 				if (!receipt) {
 					return null;
 				}
 				return receipt.from;
 			})
 		)
-	).filter(address => address !== null) as string[];
+	).filter((address) => address !== null) as string[];
 
 	return addresses;
 }
@@ -144,11 +179,17 @@ async function fetchCacheData(
 			} catch (error) {
 				attempt++;
 				if (attempt === retries) {
-					console.error(`Failed to fetch cache data for address ${address} after ${retries} attempts`, error);
+					console.error(
+						`Failed to fetch cache data for address ${address} after ${retries} attempts`,
+						error
+					);
 					return { address, data: null };
 				}
-				console.warn(`Attempt ${attempt} failed for address ${address}. Retrying in ${delay}ms...`, error);
-				await new Promise(resolve => setTimeout(resolve, delay));
+				console.warn(
+					`Attempt ${attempt} failed for address ${address}. Retrying in ${delay}ms...`,
+					error
+				);
+				await new Promise((resolve) => setTimeout(resolve, delay));
 			}
 		}
 	};
@@ -160,7 +201,9 @@ async function fetchCacheData(
 		cacheData.push(data);
 	}
 
-	return cacheData.filter((item): item is { address: string; data: any } => item !== undefined);
+	return cacheData.filter(
+		(item): item is { address: string; data: any } => item !== undefined
+	);
 }
 export {
 	initializeContract,
@@ -169,5 +212,5 @@ export {
 	getPrimeBalance,
 	getENSNameFromAddress,
 	getAddressFromENS,
-	getInteractingAddresses
+	getInteractingAddresses,
 };

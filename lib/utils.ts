@@ -1101,12 +1101,13 @@ const modifierByDays: ModifierByDays = {
 	1092: 84.51307816,
 	1093: 84.73957321,
 	1094: 84.96667526,
-	1095: 85.19438595
+	1095: 85.19438595,
 };
 const promptSupply = 1e9;
 const stakingRewards = promptSupply * 0.4;
 
-const formatNumberWithCommas = (num: number) => num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const formatNumberWithCommas = (num: number) =>
+	num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 function getModifierForDays(days: number) {
 	return modifierByDays[days] || 1;
@@ -1117,13 +1118,17 @@ function calculatePoints(deposit: Deposit): number {
 	const { createdTimestamp, endTimestamp, updatedTimestamp } = deposit;
 	if (!updatedTimestamp) {
 		const durationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24);
-		const modifier = getModifierForDays(Math.min(Math.floor(durationInDays), 1095));
+		const modifier = getModifierForDays(
+			Math.min(Math.floor(durationInDays), 1095)
+		);
 		return amountPoints * modifier;
 	}
 
-	const initialDurationInDays = (updatedTimestamp - createdTimestamp) / (60 * 60 * 24);
+	const initialDurationInDays =
+		(updatedTimestamp - createdTimestamp) / (60 * 60 * 24);
 	const newDurationInDays = (endTimestamp - createdTimestamp) / (60 * 60 * 24);
-	const initialPoints = amountPoints * getModifierForDays(initialDurationInDays);
+	const initialPoints =
+		amountPoints * getModifierForDays(initialDurationInDays);
 	const newPoints = amountPoints * getModifierForDays(newDurationInDays);
 
 	return initialPoints + newPoints;
@@ -1143,7 +1148,9 @@ function sortUserDeposits(userDeposits: UserDeposits) {
 
 const fetchPrimeValue = async () => {
 	try {
-		const response = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=PRIME");
+		const response = await fetch(
+			"https://api.coinbase.com/v2/exchange-rates?currency=PRIME"
+		);
 		const data = await response.json();
 		return parseFloat(data.data.rates.USD).toFixed(2);
 	} catch (err: any) {
@@ -1170,7 +1177,7 @@ const calculateDailySnapshots = (deposits: Deposit[]): DailySnapshot[] => {
 	// Create a map to store daily points
 	const dailyPointsMap: { [key: string]: number } = {};
 
-	deposits.forEach(deposit => {
+	deposits.forEach((deposit) => {
 		const startDate = startOfDay(new Date(deposit.createdTimestamp));
 		const endDate = startOfDay(new Date(deposit.endTimestamp));
 
@@ -1185,9 +1192,9 @@ const calculateDailySnapshots = (deposits: Deposit[]): DailySnapshot[] => {
 	});
 
 	// Convert map to array of snapshots
-	return Object.keys(dailyPointsMap).map(date => ({
+	return Object.keys(dailyPointsMap).map((date) => ({
 		date,
-		totalPoints: dailyPointsMap[date]
+		totalPoints: dailyPointsMap[date],
 	}));
 };
 
@@ -1210,5 +1217,5 @@ export {
 	isLocalStorageIsOutdated,
 	promptSupply,
 	sortUserDeposits,
-	stakingRewards
+	stakingRewards,
 };

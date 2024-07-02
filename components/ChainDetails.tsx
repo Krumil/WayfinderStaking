@@ -10,7 +10,7 @@ import {
 	DynamicIsland,
 	DynamicTitle,
 	DynamicIslandProvider,
-	useDynamicIslandSize
+	useDynamicIslandSize,
 } from "@/components/ui/DynamicBlob";
 
 const blobStates = ["default", "medium"];
@@ -23,7 +23,13 @@ interface ChainProps {
 	imagePath: string;
 }
 
-const DynamicAction = ({ title, primeScore, communityScore, initializationScore, imagePath }: ChainProps) => {
+const DynamicAction = ({
+	title,
+	primeScore,
+	communityScore,
+	initializationScore,
+	imagePath,
+}: ChainProps) => {
 	const { state: blobState, setSize } = useDynamicIslandSize();
 
 	const cycleBlobStates = () => {
@@ -35,10 +41,10 @@ const DynamicAction = ({ title, primeScore, communityScore, initializationScore,
 
 	// Provide dynamic detail in such a beautiful small place :)
 	const renderCompactState = () => (
-		<div onClick={cycleBlobStates} className='h-full w-full'>
-			<DynamicContainer className='flex  h-full w-full'>
-				<DynamicTitle className='text-xl font-bold flex gap-2 align-items'>
-					<Image src={imagePath} alt='chain' width={20} height={20} />
+		<div onClick={cycleBlobStates} className="h-full w-full">
+			<DynamicContainer className="flex  h-full w-full">
+				<DynamicTitle className="text-xl font-bold flex gap-2 align-items">
+					<Image src={imagePath} alt="chain" width={20} height={20} />
 					{title}
 				</DynamicTitle>
 			</DynamicContainer>
@@ -46,22 +52,27 @@ const DynamicAction = ({ title, primeScore, communityScore, initializationScore,
 	);
 
 	const renderMediumState = () => (
-		<div onClick={cycleBlobStates} className='h-full w-full'>
-			<DynamicContainer className='flex flex-col justify-between px-2 pt-4 text-left text-white h-full'>
-				<DynamicTitle className='text-xl font-bold flex gap-2 align-items'>
-					<Image src={imagePath} alt='chain' width={20} height={20} />
+		<div onClick={cycleBlobStates} className="h-full w-full">
+			<DynamicContainer className="flex flex-col justify-between px-2 pt-4 text-left text-white h-full">
+				<DynamicTitle className="text-xl font-bold flex gap-2 align-items">
+					<Image src={imagePath} alt="chain" width={20} height={20} />
 					{title}
 				</DynamicTitle>
-				<DynamicDescription className='leading-5 text-white pl-3'>
+				<DynamicDescription className="leading-5 text-white pl-3">
 					<div>
-						<div className='text-lg font-medium'>
-							Prime Score: <span className='text-white'>{primeScore.toFixed(2)}</span>
+						<div className="text-lg font-medium">
+							Prime Score:{" "}
+							<span className="text-white">{primeScore.toFixed(2)}</span>
 						</div>
-						<div className='text-lg font-medium'>
-							Community Score: <span className='text-white'>{communityScore.toFixed(2)}</span>
+						<div className="text-lg font-medium">
+							Community Score:{" "}
+							<span className="text-white">{communityScore.toFixed(2)}</span>
 						</div>
-						<div className='text-lg font-medium'>
-							Initialization Score: <span className='text-white'>{initializationScore.toFixed(2)}</span>
+						<div className="text-lg font-medium">
+							Initialization Score:{" "}
+							<span className="text-white">
+								{initializationScore.toFixed(2)}
+							</span>
 						</div>
 					</div>
 				</DynamicDescription>
@@ -80,26 +91,32 @@ const DynamicAction = ({ title, primeScore, communityScore, initializationScore,
 	}
 
 	return (
-		<div className=' h-full'>
-			<div className='flex flex-col gap-4  h-full'>
-				<div className='absolute top-4 right-2'>
+		<div className=" h-full">
+			<div className="flex flex-col gap-4  h-full">
+				<div className="absolute top-4 right-2">
 					{/* {!blobState.isAnimating ? ( */}
 					{/* ) : null} */}
 				</div>
-				<div className='absolute top-1 right-2'>
+				<div className="absolute top-1 right-2">
 					<div></div>
 				</div>
 
-				<DynamicIsland id='dynamic-blob'>{renderState()}</DynamicIsland>
+				<DynamicIsland id="dynamic-blob">{renderState()}</DynamicIsland>
 			</div>
 		</div>
 	);
 };
 
-export function ChainDetails({ title, primeScore, communityScore, initializationScore, imagePath }: ChainProps) {
+export function ChainDetails({
+	title,
+	primeScore,
+	communityScore,
+	initializationScore,
+	imagePath,
+}: ChainProps) {
 	return (
 		<DynamicIslandProvider initialSize={"default"}>
-			<div className='grow'>
+			<div className="grow">
 				<DynamicAction
 					title={title}
 					primeScore={primeScore}
@@ -124,7 +141,7 @@ export function FadeIn(props: any) {
 		<motion.div
 			variants={{
 				hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 24 },
-				visible: { opacity: 1, y: 0 }
+				visible: { opacity: 1, y: 0 },
 			}}
 			transition={{ duration: 0.5 }}
 			{...(isInStaggerGroup
@@ -132,7 +149,7 @@ export function FadeIn(props: any) {
 				: {
 						initial: "hidden",
 						whileInView: "visible",
-						viewport
+						viewport,
 				  })}
 			{...props}
 		/>
@@ -143,8 +160,8 @@ export function FadeInStagger({ faster = false, ...props }) {
 	return (
 		<FadeInStaggerContext.Provider value={true}>
 			<motion.div
-				initial='hidden'
-				whileInView='visible'
+				initial="hidden"
+				whileInView="visible"
 				viewport={viewport}
 				transition={{ staggerChildren: faster ? 0.12 : 0.2 }}
 				{...props}

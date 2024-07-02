@@ -21,7 +21,8 @@ const DEFAULT_PRIME_SUPPLY = 1111111111;
 const Home = () => {
 	const [addressInput, setAddressInput] = useState<string>("");
 	const [addressesData, setAddressesData] = useState<any[]>([]);
-	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] = useState<number>(0);
+	const [averageWeightedStakingPeriod, setAverageWeightedStakingPeriod] =
+		useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [primeBalance, setPrimeBalance] = useState<number>(0);
 	const [primeSupply, setPrimeSupply] = useState<number>(DEFAULT_PRIME_SUPPLY);
@@ -29,7 +30,10 @@ const Home = () => {
 	const [showLeaderboard, setShowLeaderboard] = useState(false);
 	const [totalPercentageStaked, setTotalPercentageStaked] = useState<number>(0);
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
-	const [unlockData, setUnlockData] = useState<UnlockData>({ months: [], amounts: [] });
+	const [unlockData, setUnlockData] = useState<UnlockData>({
+		months: [],
+		amounts: [],
+	});
 
 	const router = useRouter();
 
@@ -92,24 +96,24 @@ const Home = () => {
 	};
 
 	return (
-		<div className='flex flex-col items-center min-h-screen mb-10'>
-			<div className='text-2xl md:text-3xl mt-[15vh] md:mt-[30vh] text-judge-gray-200'>
+		<div className="flex flex-col items-center min-h-screen mb-10">
+			<div className="text-2xl md:text-3xl mt-[15vh] md:mt-[30vh] text-judge-gray-200">
 				<SlideUp delay={0.5}>
-					<p className='flex flex-col justify-center items-center md:flex-row '>
+					<p className="flex flex-col justify-center items-center md:flex-row ">
 						There are currently{" "}
-						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
+						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
 							<AnimatedNumber value={primeBalance} />
 						</span>{" "}
 						$PRIME staked
-						<span className='text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold '>
+						<span className="text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold ">
 							(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
 						</span>{" "}
 					</p>
 				</SlideUp>
 				<SlideUp delay={1}>
-					<p className='flex flex-col justify-center items-center md:flex-row mt-6 mb-8'>
+					<p className="flex flex-col justify-center items-center md:flex-row mt-6 mb-8">
 						This is about
-						<span className='text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent'>
+						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
 							<AnimatedNumber value={totalPercentageStaked} precision={2} />%
 						</span>{" "}
 						of the total circulating supply
@@ -125,16 +129,18 @@ const Home = () => {
 			</div>
 			{loading && (
 				<SlideUp delay={2}>
-					<div className='flex flex-col justify-center items-center text-md font-bold text-center mt-4'>
-						<p className='text-gradient-transparent mb-4'>Loading more data...</p>
-						<div className='animate-spin rounded-full h-16 w-16 border-b-4 border-white-900'></div>
+					<div className="flex flex-col justify-center items-center text-md font-bold text-center mt-4">
+						<p className="text-gradient-transparent mb-4">
+							Loading more data...
+						</p>
+						<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white-900"></div>
 					</div>
 				</SlideUp>
 			)}
 			{!loading && addressesData.length > 0 && showLeaderboard && (
 				<SlideUp delay={0.5} duration={1}>
-					<div className='w-full'>
-						<div className='mt-10'>
+					<div className="w-full">
+						<div className="mt-10">
 							<Leaderboard addressesData={addressesData} />
 						</div>
 					</div>

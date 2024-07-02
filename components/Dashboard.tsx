@@ -3,7 +3,11 @@
 import React, { useEffect, useState } from "react";
 import CardStack from "@/components/CardStack";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import { promptSupply, fetchPrimeValue, formatNumberWithCommas } from "@/lib/utils";
+import {
+	promptSupply,
+	fetchPrimeValue,
+	formatNumberWithCommas,
+} from "@/lib/utils";
 
 interface DashboardProps {
 	userAddress: string;
@@ -13,15 +17,23 @@ interface DashboardProps {
 	ensName?: string;
 }
 
-const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores, ensName }: DashboardProps) => {
+const Dashboard = ({
+	userAddress,
+	userData,
+	stakingRewards,
+	allUsersTotalScores,
+	ensName,
+}: DashboardProps) => {
 	const [fullyDiluitedValue, setFullyDiluitedValue] = useState<number>(1000);
 	const [primePrice, setPrimePrice] = useState<number>(0);
 	const [roi, setRoi] = useState<number>(0);
 	const [titleCard, setTitleCard] = useState<string>("");
 	const [totalUserScore, setTotalUserScore] = useState<number>(0);
 	const [userPrimeCached, setUserPrimeCached] = useState<number>(0);
-	const [userEarnedPromptTokens, setUserEarnedPromptTokens] = useState<number>(0);
-	const [userEarnedPromptTokensInUSD, setUserEarnedPromptTokensInUSD] = useState<number>(0);
+	const [userEarnedPromptTokens, setUserEarnedPromptTokens] =
+		useState<number>(0);
+	const [userEarnedPromptTokensInUSD, setUserEarnedPromptTokensInUSD] =
+		useState<number>(0);
 	const [userPercentage, setUserPercentage] = useState<string>("0");
 
 	useEffect(() => {
@@ -38,8 +50,11 @@ const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores,
 			return;
 		}
 		const totalScore = userData.total_score;
-		const userPrimeCached = userData.total_prime_cached / 1_000_000_000_000_000_000;
-		const percentage = totalScore ? ((totalScore / allUsersTotalScores) * 100).toPrecision(15) : "0";
+		const userPrimeCached =
+			userData.total_prime_cached / 1_000_000_000_000_000_000;
+		const percentage = totalScore
+			? ((totalScore / allUsersTotalScores) * 100).toPrecision(15)
+			: "0";
 		const tokens = (totalScore / allUsersTotalScores) * stakingRewards;
 
 		setTotalUserScore(totalScore);
@@ -55,7 +70,13 @@ const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores,
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [stakingRewards, allUsersTotalScores, fullyDiluitedValue, primePrice, userData]);
+	}, [
+		stakingRewards,
+		allUsersTotalScores,
+		fullyDiluitedValue,
+		primePrice,
+		userData,
+	]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));
@@ -93,105 +114,121 @@ const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores,
 		{
 			title: <div>{titleCard}</div>,
 			content: (
-				<div className='w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start'>
-					<div className='my-4 md:my-8 w-full'>
-						<div className='w-full'>
+				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start">
+					<div className="my-4 md:my-8 w-full">
+						<div className="w-full">
 							You have staked{" "}
-							<span className='md:text-3xl text-gradient-transparent'>
+							<span className="md:text-3xl text-gradient-transparent">
 								<AnimatedNumber value={userPrimeCached} />
 							</span>{" "}
 							$PRIME, giving you a Contribution Score of{" "}
-							<span className='md:text-3xl text-gradient-transparent'>
+							<span className="md:text-3xl text-gradient-transparent">
 								<AnimatedNumber value={totalUserScore} />
 							</span>{" "}
 						</div>
 					</div>
 					<p>
-						This is <span className='md:text-3xl'>{formatPercentage(userPercentage)}% </span>
+						This is{" "}
+						<span className="md:text-3xl">
+							{formatPercentage(userPercentage)}%{" "}
+						</span>
 						of the total score, earning you{" "}
-						<span className='md:text-3xl'>
+						<span className="md:text-3xl">
 							<AnimatedNumber value={userEarnedPromptTokens} />
 						</span>{" "}
 						$PROMPT.
 					</p>
-					<div className='absolute bottom-1 left-1/2 transform -translate-x-1/2 text-sm md:text-base bg-transparent mb-2 text-gradient-transparent'>
-						<div className='flex justify-end items-end text-3xl leading-none'>
+					<div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-sm md:text-base bg-transparent mb-2 text-gradient-transparent">
+						<div className="flex justify-end items-end text-3xl leading-none">
 							<div>{userData?.position || 0}</div>
-							<sup className='text-xs text-gradient-transparent self-start'>
+							<sup className="text-xs text-gradient-transparent self-start">
 								{getOrdinalSymbol(userData?.position || 0)}
 							</sup>
-							<span className='text-sm'>/ {userData?.total_users || 0}</span>
+							<span className="text-sm">/ {userData?.total_users || 0}</span>
 						</div>
 					</div>
 				</div>
-			)
+			),
 		},
 		{
 			title: <div>ROY</div>,
 			content: (
-				<div className='text-xl md:text-2xl'>
-					<div className='flex flex-col md:flex-row items-center md:items-start justify-between my-6'>
+				<div className="text-xl md:text-2xl">
+					<div className="flex flex-col md:flex-row items-center md:items-start justify-between my-6">
 						<div>Speculative FDV (in millions): </div>
 						<input
-							type='number'
+							type="number"
 							value={fullyDiluitedValue}
 							onChange={handleFdvChange}
-							className='input input-sm !z-50 mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right'
+							className="input input-sm !z-50 mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right"
 						/>
 					</div>
 					<div>
-						Your <span className='text-3xl'>{formatNumberWithCommas(userEarnedPromptTokens)} </span>
+						Your{" "}
+						<span className="text-3xl">
+							{formatNumberWithCommas(userEarnedPromptTokens)}{" "}
+						</span>
 						tokens will be worth{" "}
-						<span className='text-gradient-transparent text-3xl'>
+						<span className="text-gradient-transparent text-3xl">
 							<AnimatedNumber value={userEarnedPromptTokensInUSD} />
 						</span>{" "}
 						$USD, with a ROI of{" "}
-						<span className='text-gradient-transparent text-3xl'>{roi.toFixed(2)}%</span>
+						<span className="text-gradient-transparent text-3xl">
+							{roi.toFixed(2)}%
+						</span>
 					</div>
 				</div>
-			)
+			),
 		},
 		{
 			title: <div>Badges Info</div>,
 			content: (
-				<div className='text-base'>
-					<div className='flex flex-row items-center justify-between my-2'>
+				<div className="text-base">
+					<div className="flex flex-row items-center justify-between my-2">
 						Inactive Referrals:
 						<span>
 							<AnimatedNumber value={userData?.extra.inactive_referrals || 0} />
 						</span>
 					</div>
-					<div className='flex flex-row items-center justify-between my-2'>
+					<div className="flex flex-row items-center justify-between my-2">
 						Users Referred:{" "}
 						<span>
 							<AnimatedNumber value={userData?.users_referred || 0} />
 						</span>
 					</div>
-					<div className='flex flex-row items-center justify-between my-2'>
+					<div className="flex flex-row items-center justify-between my-2">
 						Prime Held Duration:{" "}
 						<span>
-							<AnimatedNumber value={userData ? userData.prime_held_duration / 86400 : 0} /> days
+							<AnimatedNumber
+								value={userData ? userData.prime_held_duration / 86400 : 0}
+							/>{" "}
+							days
 						</span>
 					</div>
-					<div className='flex flex-row items-center justify-between my-2'>
+					<div className="flex flex-row items-center justify-between my-2">
 						Longest Caching Time:{" "}
 						<span>
-							<AnimatedNumber value={userData?.longest_caching_time || 0} /> days
+							<AnimatedNumber value={userData?.longest_caching_time || 0} />{" "}
+							days
 						</span>
 					</div>
-					<div className='flex flex-row items-center justify-between my-2'>
+					<div className="flex flex-row items-center justify-between my-2">
 						Echelon Governance Participation:{" "}
 						<span>
-							<AnimatedNumber value={userData?.echelon_governance_participation || 0} />
+							<AnimatedNumber
+								value={userData?.echelon_governance_participation || 0}
+							/>
 						</span>
 					</div>
-					<div className='flex flex-row items-center justify-between my-2'>
+					<div className="flex flex-row items-center justify-between my-2">
 						Participated in Prime Unlock Vote:{" "}
-						<span>{userData?.participated_in_prime_unlock_vote ? "Yes" : "No"}</span>
+						<span>
+							{userData?.participated_in_prime_unlock_vote ? "Yes" : "No"}
+						</span>
 					</div>
 				</div>
-			)
-		}
+			),
+		},
 	];
 
 	return <div>{userData && <CardStack cards={stackCards} />}</div>;

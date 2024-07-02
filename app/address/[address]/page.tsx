@@ -59,8 +59,8 @@ const AddressPage = () => {
 				method: "POST",
 				body: JSON.stringify({ address: address }),
 				headers: {
-					"Content-Type": "application/json"
-				}
+					"Content-Type": "application/json",
+				},
 			});
 			const data = await response.json();
 			setUserData(data);
@@ -76,8 +76,12 @@ const AddressPage = () => {
 
 	return (
 		<div>
-			{address && fetchedEnsName && totalScore !== 0 && stakingRewards !== 0 && userData ? (
-				<div className='flex flex-col h-screen'>
+			{address &&
+			fetchedEnsName &&
+			totalScore !== 0 &&
+			stakingRewards !== 0 &&
+			userData ? (
+				<div className="flex flex-col h-screen">
 					<Dashboard
 						userAddress={address}
 						userData={userData}
@@ -88,8 +92,8 @@ const AddressPage = () => {
 					/>
 				</div>
 			) : (
-				<div className='flex justify-center items-center h-screen'>
-					<div className='animate-spin rounded-full h-32 w-32 border-b-4 border-white-900'></div>
+				<div className="flex justify-center items-center h-screen">
+					<div className="animate-spin rounded-full h-32 w-32 border-b-4 border-white-900"></div>
 				</div>
 			)}
 		</div>
