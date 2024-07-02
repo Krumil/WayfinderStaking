@@ -21,22 +21,26 @@ export async function GET(
 		ensName = addressParam.toLowerCase();
 	} else {
 		address = addressParam;
-		ensName = await getENSNameFromAddress(address);
+		ensName = await getENSNameFromAddress(address, true);
 	}
 
 	// Fetch user data
-	const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/data`, {
-		method: "POST",
-		body: JSON.stringify({ address }),
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
+	const response = await fetch(
+		`https://wayfinder-staking.vercel.app/api/data`,
+		{
+			method: "POST",
+			body: JSON.stringify({ address }),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}
+	);
 	const userData: UserData = await response.json();
+	console.log(userData);
 
 	// Fetch global data
 	const globalResponse = await fetch(
-		`${process.env.NEXT_PUBLIC_API_URL}/api/data/global`
+		`https://wayfinder-staking.vercel.app/api/data/global`
 	);
 	const globalData = await globalResponse.json();
 
@@ -63,80 +67,112 @@ export async function GET(
 				style={{
 					display: "flex",
 					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
+					alignItems: "flex-start",
+					justifyContent: "space-around",
 					width: "100%",
 					height: "100%",
-					backgroundColor: "#1F2937",
+					textAlign: "center",
+					padding: "50px",
 					color: "white",
-					fontFamily: "Oxanium",
-					padding: "40px",
+					backgroundImage:
+						"url(https://wayfinder-staking.vercel.app/assets/bg.png)",
+					backgroundSize: "100% 100%",
+					backgroundPosition: "center",
 				}}
 			>
 				<div
 					style={{
-						fontSize: "36px",
+						fontSize: "52px",
 						fontWeight: "bold",
 						marginBottom: "20px",
+						display: "flex",
 					}}
 				>
 					{titleCard}
 				</div>
 				<div
 					style={{
-						fontSize: "24px",
+						fontSize: "36px",
 						textAlign: "center",
 						marginBottom: "20px",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "flex-start",
+						justifyContent: "flex-start",
 					}}
 				>
-					You have staked{" "}
-					<span style={{ color: "#F59E0B" }}>
-						{formatNumberWithCommas(userPrimeCached)}
-					</span>{" "}
-					$PRIME
+					<div style={{ display: "flex", marginBottom: "10px" }}>
+						You have staked{" "}
+						<span style={{ color: "#7f754f", margin: "0 8px" }}>
+							{formatNumberWithCommas(userPrimeCached)}
+						</span>{" "}
+						, giving you a Contribution Score
+					</div>
+					<div style={{ display: "flex" }}>
+						of{" "}
+						<span style={{ color: "#7f754f", marginLeft: "8px" }}>
+							{formatNumberWithCommas(userData.total_score)}
+						</span>
+					</div>
 				</div>
+
 				<div
 					style={{
-						fontSize: "24px",
+						fontSize: "36px",
 						textAlign: "center",
 						marginBottom: "20px",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "flex-start",
+						justifyContent: "flex-start",
 					}}
 				>
-					Contribution Score:{" "}
-					<span style={{ color: "#F59E0B" }}>
-						{formatNumberWithCommas(userData.total_score)}
-					</span>
+					<div style={{ display: "flex", marginBottom: "10px" }}>
+						This is{" "}
+						<span style={{ color: "#7f754f", margin: "0 8px" }}>
+							{percentage}%
+						</span>{" "}
+						of the total score, earning you
+					</div>
+					<div style={{ display: "flex" }}>
+						<span style={{ color: "#7f754f", marginRight: "8px" }}>
+							{formatNumberWithCommas(earnedPromptTokens)}
+						</span>
+						$PROMPT
+					</div>
 				</div>
+
 				<div
 					style={{
-						fontSize: "24px",
-						textAlign: "center",
-						marginBottom: "20px",
-					}}
-				>
-					This is <span style={{ color: "#F59E0B" }}>{percentage}%</span> of the
-					total score
-				</div>
-				<div
-					style={{
-						fontSize: "24px",
-						textAlign: "center",
-					}}
-				>
-					Earning you{" "}
-					<span style={{ color: "#F59E0B" }}>
-						{formatNumberWithCommas(earnedPromptTokens)}
-					</span>{" "}
-					$PROMPT
-				</div>
-				<div
-					style={{
+						display: "flex",
+						alignItems: "flex-end",
 						position: "absolute",
 						bottom: "20px",
-						fontSize: "18px",
+						left: "50%",
+						fontSize: "32px",
 					}}
 				>
-					Rank: {userData.position} / {userData.total_users}
+					<span
+						style={{
+							fontSize: "46px",
+							marginRight: "4px",
+							color: "#9ca3af",
+						}}
+					>
+						{userData.position}
+					</span>{" "}
+					/ {userData.total_users}
+				</div>
+				<div
+					style={{
+						fontSize: "1.5rem",
+						width: "100%",
+						color: "#9ca3af",
+						display: "flex",
+						justifyContent: "flex-end",
+					}}
+				>
+					by x.com/Simo1028
 				</div>
 			</div>
 		),

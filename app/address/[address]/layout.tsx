@@ -8,9 +8,6 @@ const inter = Oxanium({
 	subsets: ["latin"],
 });
 
-const Header = dynamic(() => import("@/components/Header"));
-const DisclaimerDialog = dynamic(() => import("@/components/DisclaimerDialog"));
-
 export async function generateMetadata({
 	params,
 }: {
@@ -31,34 +28,36 @@ export async function generateMetadata({
 		}
 	} else {
 		address = addressParam;
-		ensName = await getENSNameFromAddress(address);
+		ensName = await getENSNameFromAddress(address, true);
 	}
 
 	const displayName =
 		ensName || `${address.slice(0, 4)}...${address.slice(-4)}`;
 
 	const baseUrl =
-		process.env.NEXT_PUBLIC_BASE_URL || "https://wayfinder-staking.vercel.app";
+		process.env.NEXT_PUBLIC_BASE_URL || "https://wayfinder-staking.vercel.app/";
 
 	return {
 		metadataBase: new URL(baseUrl),
 		title: `${displayName} | Wayfinder Staking`,
 		description: `View staking details for ${displayName} on Wayfinder Staking`,
 		openGraph: {
+			siteName: "Wayfinder Staking",
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			url: `https://wayfinder-staking.vercel.app/address/${addressParam}`,
+			url: `https://wayfinder-staking.vercel.app//address/${addressParam}`,
 			images: [
 				{
-					url: `https://wayfinder-staking.vercel.app/api/og/${addressParam}`,
+					url: `https://wayfinder-staking.vercel.app//api/og/${addressParam}`,
 				},
 			],
 		},
 		twitter: {
+			site: "@Simo1028",
 			card: "summary_large_image",
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			images: [`https://wayfinder-staking.vercel.app/api/og/${addressParam}`],
+			images: [`https://wayfinder-staking.vercel.app//api/og/${addressParam}`],
 		},
 	};
 }

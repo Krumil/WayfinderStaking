@@ -131,7 +131,7 @@ export async function GET(request: Request) {
 			</div>
 		),
 		{
-			width: 1100,
+			width: 1200,
 			height: 630,
 			fonts: [
 				{
