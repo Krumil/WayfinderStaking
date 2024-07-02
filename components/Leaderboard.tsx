@@ -4,12 +4,14 @@ import SlideUp from "@/components/ui/SlideUp";
 import { useRouter } from "next/navigation";
 import { getENSNameFromAddress } from "@/lib/contract";
 import { formatNumberWithCommas } from "@/lib/utils";
+import { useEffect, useState } from "react";
 interface LeaderboardProps {
 	addressesData: any[];
 }
 
 const Leaderboard = ({ addressesData }: LeaderboardProps) => {
 	const router = useRouter();
+	const [topAddresses, setTopAddresses] = useState<any[]>([]);
 
 	const handleClick = (address: string) => {
 		router.push(`/address/${address}`);
@@ -26,15 +28,29 @@ const Leaderboard = ({ addressesData }: LeaderboardProps) => {
 		return primeScore + communityScore + initializationScore;
 	};
 
-	// create sorted list of addresses based on total score
-	const sortedAddresses = addressesData.sort((a, b) => calculateTotalScore(b.data) - calculateTotalScore(a.data));
-	const topAddresses = sortedAddresses.slice(0, 10);
 
-	// get ENS names for addresses
-	topAddresses.forEach(async item => {
-		const ensName = await getENSNameFromAddress(item.address, true);
-		item.address = ensName || item.address;
-	});
+	useEffect(() => {
+		const fetchTopAddresses = async () => {
+		  // Create sorted list of addresses based on total score
+		  const sortedAddresses = addressesData.sort((a, b) => calculateTotalScore(b.data) - calculateTotalScore(a.data));
+		  const top10Addresses = sortedAddresses.slice(0, 10);
+	
+		  // Fetch ENS names for all addresses concurrently
+		  const addressesWithENS = await Promise.all(
+			top10Addresses.map(async (item) => {
+			  const ensName = await getENSNameFromAddress(item.address, true);
+			  return {
+				...item,
+				name: ensName || item.address
+			  };
+			})
+		  );
+	
+		  setTopAddresses(addressesWithENS);
+		};
+	
+		fetchTopAddresses();
+	  }, [addressesData]);
 
 	return (
 		<div className='p-4 max-w-4xl mx-auto'>
@@ -43,15 +59,13 @@ const Leaderboard = ({ addressesData }: LeaderboardProps) => {
 				{topAddresses.map((item, index) => (
 					<SlideUp key={index} delay={index * 0.3 + 0.5}>
 						<div
-							className='p-4 border rounded-lg shadow-sm flex flex-row justify-between cursor-pointer'
+							className='p-4 border rounded-lg shadow-sm flex flex-row justify-between items-center cursor-pointer'
 							onClick={() => handleClick(item.address)}>
 							<div>
-								<div className='text-2xl'>{item.address}</div>
+								<div className='text-2xl'>{item.name}</div>
 							</div>
-							<div className='text-end'>
-								<div className='text-xl font-bold'>
-									{formatNumberWithCommas(calculateTotalScore(item.data))} CS
-								</div>
+							<div className='text-end text-xl font-bold'>
+								{formatNumberWithCommas(calculateTotalScore(item.data))} CS
 							</div>
 							{item.prime_amount_cached && (
 								<div className='text-judge-gray-200 text-sm md:text-xl'>

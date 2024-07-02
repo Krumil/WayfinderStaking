@@ -50,7 +50,7 @@ const CardStack: FC<CardStackProps> = ({ cards }) => {
 						)}
 						{selectedIndex > 0 && (
 							<div
-								className='-mt-6 absolute top-0 md:top-1/2 -translate-y-full md:-right-12 text-white transition-all duration-300'
+								className='absolute top-0 md:top-1/2 -translate-y-full md:-right-12 text-white transition-all duration-300'
 								aria-label='Previous card'>
 								<ChevronUp size={32} className='animate-[fadeIn_600ms_alternate_infinite]' />
 								<ChevronUp
@@ -65,7 +65,7 @@ const CardStack: FC<CardStackProps> = ({ cards }) => {
 						)}
 						{selectedIndex < cards.length - 1 && (
 							<div
-								className='-mt-6 absolute top-full md:top-1/2 translate-y-full md:-right-12 text-white transition-all duration-300'
+								className='absolute top-full md:top-1/2 md:-right-12 text-white transition-all duration-300'
 								aria-label='Next card'>
 								<ChevronDown size={32} className='animate-[fadeIn_600ms_alternate_infinite]' />
 								<ChevronDown

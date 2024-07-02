@@ -85,7 +85,7 @@ const Dashboard = ({ userAddress, userData, stakingRewards, allUsersTotalScores,
 		if (ensName && ensName.includes(".eth")) {
 			setTitleCard(ensName);
 		} else {
-			setTitleCard(`${userAddress.slice(0, 6)}...${userAddress.slice(-6)}`);
+			setTitleCard(`${userAddress.slice(0, 4)}...${userAddress.slice(-4)}`);
 		}
 	}, [ensName, userAddress]);
 
