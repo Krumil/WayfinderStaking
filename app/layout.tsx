@@ -3,6 +3,7 @@ import { Oxanium } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react";
 // import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
 
 const inter = Oxanium({
@@ -48,6 +49,8 @@ export default function RootLayout({
 				<div className="background-gradient" />
 				<div className="scrollable flex-1 w-full overflow-y-auto">
 					{children}
+					<SpeedInsights />
+					<Analytics />
 				</div>
 				{/* <BuyMeACoffeeButton /> */}
 				<DisclaimerDialog />
