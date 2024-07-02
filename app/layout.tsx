@@ -13,6 +13,9 @@ const DisclaimerDialog = dynamic(() => import("@/components/DisclaimerDialog"));
 
 export const metadata: Metadata = {
 	openGraph: {
+		title: "Wayfinder Staking",
+		description:
+			"Here you can see data about the staking of the Wayfinder Protocol",
 		type: "article",
 		url: "https://wayfinder-staking.vercel.app/",
 		images: [
@@ -22,6 +25,9 @@ export const metadata: Metadata = {
 		],
 	},
 	twitter: {
+		title: "Wayfinder Staking",
+		description:
+			"Here you can see data about the staking of the Wayfinder Protocol",
 		images: ["https://wayfinder-staking.vercel.app/api/og"],
 	},
 };

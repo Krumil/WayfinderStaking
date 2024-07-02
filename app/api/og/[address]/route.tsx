@@ -54,7 +54,7 @@ export async function GET(
 	const titleCard = ensName || `${address.slice(0, 4)}...${address.slice(-4)}`;
 
 	const oxaniumMedium = fetch(
-		new URL("../../Oxanium-Medium.ttf", import.meta.url)
+		new URL("../../../Oxanium-Medium.ttf", import.meta.url)
 	).then((res) => res.arrayBuffer());
 
 	return new ImageResponse(
