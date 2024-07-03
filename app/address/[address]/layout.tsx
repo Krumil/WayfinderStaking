@@ -36,6 +36,7 @@ export async function generateMetadata({
 
 	const baseUrl =
 		process.env.NEXT_PUBLIC_BASE_URL || "https://wayfinder-staking.vercel.app/";
+	// process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000/";
 
 	return {
 		metadataBase: new URL(baseUrl),
@@ -45,10 +46,10 @@ export async function generateMetadata({
 			siteName: "Wayfinder Staking",
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			url: `https://wayfinder-staking.vercel.app//address/${addressParam}`,
+			url: `http://localhost:3000/address/${addressParam}`,
 			images: [
 				{
-					url: `https://wayfinder-staking.vercel.app//api/og/${addressParam}`,
+					url: `http://localhost:3000/api/og/${addressParam}`,
 				},
 			],
 		},
@@ -57,7 +58,7 @@ export async function generateMetadata({
 			card: "summary_large_image",
 			title: `${displayName} | Wayfinder Staking`,
 			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			images: [`https://wayfinder-staking.vercel.app//api/og/${addressParam}`],
+			images: [`http://localhost:3000/api/og/${addressParam}`],
 		},
 	};
 }

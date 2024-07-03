@@ -4,6 +4,21 @@ import { formatNumberWithCommas } from "@/lib/utils";
 
 export const runtime = "edge";
 
+function getOrdinalSymbol(number: number) {
+	const j = number % 10,
+		k = number % 100;
+	if (j == 1 && k != 11) {
+		return "st";
+	}
+	if (j == 2 && k != 12) {
+		return "nd";
+	}
+	if (j == 3 && k != 13) {
+		return "rd";
+	}
+	return "th";
+}
+
 export async function GET(
 	request: Request,
 	{ params }: { params: { address: string } }
@@ -82,98 +97,126 @@ export async function GET(
 			>
 				<div
 					style={{
-						fontSize: "70px",
-						fontWeight: "bold",
-						display: "flex",
-					}}
-				>
-					{titleCard}
-				</div>
-				<div
-					style={{
-						fontSize: "36px",
-						textAlign: "center",
+						background:
+							"linear-gradient(45deg, rgba(73,73,73,0.5) 0%, rgba(184, 182, 140, 0.5) 100%)",
+						overflow: "hidden",
+						borderRadius: "0.375rem",
+						boxShadow:
+							"0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+						fontSize: "1.5rem",
 						display: "flex",
 						flexDirection: "column",
+						justifyContent: "space-between",
 						alignItems: "flex-start",
-						justifyContent: "flex-start",
+						padding: "2rem",
+						paddingBottom: "8rem",
+						width: "100%",
+						height: "100%",
+						position: "relative",
 					}}
 				>
-					<div style={{ display: "flex", marginBottom: "10px" }}>
-						You have staked{" "}
-						<span style={{ color: "#7f754f", margin: "0 8px" }}>
-							{formatNumberWithCommas(userPrimeCached)}
-						</span>{" "}
-						, giving you a Contribution Score
-					</div>
-					<div style={{ display: "flex" }}>
-						of{" "}
-						<span style={{ color: "#7f754f", marginLeft: "8px" }}>
-							{formatNumberWithCommas(userData.total_score)}
-						</span>
-					</div>
-				</div>
-
-				<div
-					style={{
-						fontSize: "36px",
-						textAlign: "center",
-						marginBottom: "20px",
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "flex-start",
-						justifyContent: "flex-start",
-					}}
-				>
-					<div style={{ display: "flex", marginBottom: "10px" }}>
-						This is{" "}
-						<span style={{ color: "#7f754f", margin: "0 8px" }}>
-							{percentage}%
-						</span>{" "}
-						of the total score, earning you
-					</div>
-					<div style={{ display: "flex" }}>
-						<span style={{ color: "#7f754f", marginRight: "8px" }}>
-							{formatNumberWithCommas(earnedPromptTokens)}
-						</span>
-						$PROMPT
-					</div>
-				</div>
-
-				<div
-					style={{
-						display: "flex",
-						alignItems: "flex-end",
-						position: "absolute",
-						bottom: "20px",
-						left: "50%",
-						fontSize: "32px",
-					}}
-				>
-					<span
+					<div
 						style={{
-							fontSize: "46px",
-							marginRight: "4px",
-							color: "#9ca3af",
+							fontSize: "70px",
+							fontWeight: "bold",
+							display: "flex",
 						}}
 					>
-						{userData.position}
-					</span>{" "}
-					/ {userData.total_users}
-				</div>
-				<div
-					style={{
-						fontSize: "1.5rem",
-						width: "100%",
-						color: "#9ca3af",
-						display: "flex",
-						justifyContent: "flex-end",
-						position: "absolute",
-						bottom: "20px",
-						right: "20px",
-					}}
-				>
-					by x.com/Simo1028
+						{titleCard}
+					</div>
+					<div
+						style={{
+							fontSize: "36px",
+							textAlign: "center",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "flex-start",
+							justifyContent: "flex-start",
+						}}
+					>
+						<div style={{ display: "flex", marginBottom: "10px" }}>
+							You have staked{" "}
+							<span style={{ color: "#7f754f", margin: "0 8px" }}>
+								{formatNumberWithCommas(userPrimeCached)}
+							</span>{" "}
+							, giving you a Contribution Score
+						</div>
+						<div style={{ display: "flex" }}>
+							of{" "}
+							<span style={{ color: "#7f754f", marginLeft: "8px" }}>
+								{formatNumberWithCommas(userData.total_score)}
+							</span>
+						</div>
+					</div>
+
+					<div
+						style={{
+							fontSize: "36px",
+							textAlign: "center",
+							marginBottom: "20px",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "flex-start",
+							justifyContent: "flex-start",
+						}}
+					>
+						<div style={{ display: "flex", marginBottom: "10px" }}>
+							This is{" "}
+							<span style={{ color: "#7f754f", margin: "0 8px" }}>
+								{percentage}%
+							</span>{" "}
+							of the total score, earning you
+						</div>
+						<div style={{ display: "flex" }}>
+							<span style={{ color: "#7f754f", marginRight: "8px" }}>
+								{formatNumberWithCommas(earnedPromptTokens)}
+							</span>
+							$PROMPT
+						</div>
+					</div>
+
+					<div
+						style={{
+							display: "flex",
+							alignItems: "flex-end",
+							position: "absolute",
+							bottom: "20px",
+							left: "50%",
+							fontSize: "32px",
+						}}
+					>
+						<span
+							style={{
+								fontSize: "46px",
+								marginRight: "4px",
+								color: "#9ca3af",
+							}}
+						>
+							{userData.position}
+							<sup
+								style={{
+									fontSize: "16px",
+								}}
+							>
+								{getOrdinalSymbol(userData?.position || 0)}
+							</sup>
+						</span>{" "}
+						/ {userData.total_users}
+					</div>
+					<div
+						style={{
+							fontSize: "1.5rem",
+							width: "100%",
+							color: "#9ca3af",
+							display: "flex",
+							justifyContent: "flex-end",
+							position: "absolute",
+							bottom: "20px",
+							right: "20px",
+						}}
+					>
+						by x.com/Simo1028
+					</div>
 				</div>
 			</div>
 		),
