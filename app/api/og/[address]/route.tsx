@@ -170,6 +170,9 @@ export async function GET(
 						color: "#9ca3af",
 						display: "flex",
 						justifyContent: "flex-end",
+						position: "absolute",
+						bottom: "20px",
+						right: "20px",
 					}}
 				>
 					by x.com/Simo1028
