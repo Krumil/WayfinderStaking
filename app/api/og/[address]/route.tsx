@@ -55,7 +55,7 @@ export async function GET(
 	const earnedPromptTokens =
 		(userData.total_score / totalScore) * stakingRewards;
 
-	const titleCard = ensName || `${address.slice(0, 4)}...${address.slice(-4)}`;
+	const titleCard = ensName || `${address.slice(0, 8)}...${address.slice(-8)}`;
 
 	const oxaniumMedium = fetch(
 		new URL("../../../Oxanium-Medium.ttf", import.meta.url)
@@ -82,9 +82,8 @@ export async function GET(
 			>
 				<div
 					style={{
-						fontSize: "52px",
+						fontSize: "70px",
 						fontWeight: "bold",
-						marginBottom: "20px",
 						display: "flex",
 					}}
 				>
@@ -94,7 +93,6 @@ export async function GET(
 					style={{
 						fontSize: "36px",
 						textAlign: "center",
-						marginBottom: "20px",
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "flex-start",
