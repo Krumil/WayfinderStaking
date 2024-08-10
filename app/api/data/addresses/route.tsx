@@ -20,9 +20,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
 	try {
 		debugger;
-		const { address } = await request.json();
+		const { addresses } = await request.json();
 		const apiUrl = getApiUrl("/addresses");
-		const response = await axios.post(apiUrl, { address });
+		const response = await axios.post(apiUrl, { addresses });
 		return NextResponse.json(response.data);
 	} catch (error) {
 		console.error("Error posting address data:", error);

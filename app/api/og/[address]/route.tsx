@@ -1,28 +1,17 @@
 import { ImageResponse } from "next/og";
 import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
-import { formatNumberWithCommas } from "@/lib/utils";
+import { formatNumberWithCommas, getOrdinalIndicator } from "@/lib/utils";
 
 export const runtime = "edge";
-
-function getOrdinalSymbol(number: number) {
-	const j = number % 10,
-		k = number % 100;
-	if (j == 1 && k != 11) {
-		return "st";
-	}
-	if (j == 2 && k != 12) {
-		return "nd";
-	}
-	if (j == 3 && k != 13) {
-		return "rd";
-	}
-	return "th";
-}
 
 export async function GET(
 	request: Request,
 	{ params }: { params: { address: string } }
 ) {
+	// Prevent caching
+	const { searchParams } = new URL(request.url);
+	const preventCache = searchParams.get('preventCache') || Date.now();
+
 	const addressParam = params.address.toLowerCase();
 	let address: string;
 	let ensName: string | null = null;
@@ -51,7 +40,6 @@ export async function GET(
 		}
 	);
 	const userData: UserData = await response.json();
-	console.log(userData);
 
 	// Fetch global data
 	const globalResponse = await fetch(
@@ -76,7 +64,7 @@ export async function GET(
 		new URL("../../../Oxanium-Medium.ttf", import.meta.url)
 	).then((res) => res.arrayBuffer());
 
-	return new ImageResponse(
+	const imageResponse = new ImageResponse(
 		(
 			<div
 				style={{
@@ -198,7 +186,7 @@ export async function GET(
 									fontSize: "16px",
 								}}
 							>
-								{getOrdinalSymbol(userData?.position || 0)}
+								{getOrdinalIndicator(userData?.position || 0)}
 							</sup>
 						</span>{" "}
 						/ {userData.total_users}
@@ -233,4 +221,9 @@ export async function GET(
 			],
 		}
 	);
+
+	// Set cache control headers
+	imageResponse.headers.set('Cache-Control', 'no-store, max-age=0');
+
+	return imageResponse;
 }

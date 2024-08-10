@@ -1,9 +1,8 @@
-// lib/utils.ts
-import clsx, { ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs))
 }
 
 const modifierByDays: ModifierByDays = {
@@ -1146,6 +1145,18 @@ function sortUserDeposits(userDeposits: UserDeposits) {
 	});
 }
 
+const getOrdinalIndicator = (number: number): string => {
+	if (number % 100 >= 11 && number % 100 <= 13) {
+		return "th";
+	}
+	switch (number % 10) {
+		case 1: return "st";
+		case 2: return "nd";
+		case 3: return "rd";
+		default: return "th";
+	}
+};
+
 const fetchPrimeValue = async () => {
 	try {
 		const response = await fetch(
@@ -1206,6 +1217,8 @@ const getApiUrl = (endpoint: string) => {
 	return apiUrl;
 };
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 export {
 	calculateDailySnapshots,
 	calculatePoints,
@@ -1218,4 +1231,6 @@ export {
 	promptSupply,
 	sortUserDeposits,
 	stakingRewards,
+	getOrdinalIndicator,
+	isMobile,
 };

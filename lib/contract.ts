@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { isMobile } from "./utils";
 import abi from "./abi.json";
 import primeAbi from "./primeAbi.json"; // ABI for the $PRIME token contract
 import primeAbiBase from "./primeAbiBase.json"; // ABI for the $PRIME token contract
@@ -18,6 +19,8 @@ let stakingContract: ethers.Contract;
 let stakingContractBase: ethers.Contract;
 let primeContract: ethers.Contract;
 let primeContractBase: ethers.Contract;
+
+let ensCache: Record<string, string> = {};
 
 async function initializeContract() {
 	provider = new ethers.JsonRpcProvider(providerUrl);
@@ -64,15 +67,34 @@ async function getPrimeBalance() {
 	return ethers.formatEther(balance + balanceBase);
 }
 
+async function fetchENSList() {
+	try {
+		if (Object.keys(ensCache).length === 0) {
+			const response = await axios.get('/api/data/ens');
+			ensCache = response.data;
+		}
+	} catch (error) {
+		console.error("Error fetching ENS list:", error);
+	}
+}
+
 async function getENSNameFromAddress(address: string, truncated = false) {
 	if (!provider) {
 		await initializeContract();
 	}
+
+	const cachedENS = ensCache[address.toLowerCase()];
+	if (cachedENS) {
+		return cachedENS.length > 20 ? `${cachedENS.slice(0, isMobile ? 4 : 8)}...${cachedENS.slice(isMobile ? -4 : -8)}` : cachedENS;
+	}
+
 	const ens = await provider.lookupAddress(address);
 	if (ens) {
-		return ens;
+		ensCache[address.toLowerCase()] = ens;
+		return ens.length > 20 ? `${ens.slice(0, isMobile ? 4 : 8)}...${ens.slice(isMobile ? -4 : -8)}` : ens;
 	} else if (truncated) {
-		return `${address.slice(0, 4)}...${address.slice(-4)}`;
+		const letters = isMobile ? 4 : 8;
+		return `${address.slice(0, letters)}...${address.slice(-letters)}`;
 	} else {
 		return address;
 	}
@@ -82,6 +104,7 @@ async function getAddressFromENS(ensName: string, truncated = false) {
 	if (!provider) {
 		await initializeContract();
 	}
+
 	const resolver = await provider.getResolver(ensName);
 	if (!resolver) {
 		return null;
@@ -213,4 +236,5 @@ export {
 	getENSNameFromAddress,
 	getAddressFromENS,
 	getInteractingAddresses,
+	fetchENSList,
 };
