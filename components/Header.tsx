@@ -69,7 +69,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 
 	return (
 		<header
-			className={`fixed top-0 text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
+			className={`z-50 fixed top-0 text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
 				} ${className}`}
 		>
 			<div className="flex items-center w-1/4">

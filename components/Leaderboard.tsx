@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { FixedSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "react-hot-toast";
 import SlideUp from "@/components/ui/SlideUp";
 import { Star } from "lucide-react";
 import { formatNumberWithCommas, getOrdinalIndicator, isMobile } from "@/lib/utils";
 import { getENSNameFromAddress } from "@/lib/contract";
+import { motion } from "framer-motion";
 
 interface LeaderboardProps {
 	addressesData: any[];
@@ -57,18 +58,16 @@ const calculateTotalScore = (data: any) => {
 };
 
 const AddressListItem = React.memo(({ index, style, data }: any) => {
-	const { addresses, handleClick, favorites, toggleFavorite } = data;
+	const { addresses, favorites, toggleFavorite } = data;
 	const item = addresses[index];
 	const ordinalIndicator = getOrdinalIndicator(item.data.position);
 	const showOnlyAddress = item.name === item.address || item.name === `${item.address.slice(0, isMobile ? 4 : 8)}...${item.address.slice(isMobile ? -4 : -8)}`;
 	const isFavorite = favorites.includes(item.address.toLowerCase());
 	return (
 		<div style={style} className="px-4">
-			<SlideUp delay={0}>
-				<div
-					className={`p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center cursor-pointer transition-colors duration-200 ${data.highlightedIndex === index ? 'bg-[#0b0f0d]' : 'hover:bg-[#0b0f0d] hover:bg-opacity-40'}`}
-				>
-					<div className="flex items-center space-x-4 flex-grow" onClick={() => handleClick(item.address)}>
+			<SlideUp>
+				<Link href={`/address/${item.address}`} className={`p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center cursor-pointer transition-colors duration-200 ${data.highlightedIndex === index ? 'bg-[#0b0f0d]' : 'hover:bg-[#0b0f0d] hover:bg-opacity-40'}`}>
+					<div className="flex items-center space-x-4 flex-grow">
 						<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
 							<span className="text-lg font-bold text-white">{item.data.position}<sup className="text-xs">{ordinalIndicator}</sup></span>
 						</div>
@@ -94,6 +93,7 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 					<div
 						className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
 						onClick={(e) => {
+							e.preventDefault();
 							e.stopPropagation();
 							toggleFavorite(item.address);
 						}}
@@ -109,15 +109,14 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 							/>
 						)}
 					</div>
-				</div>
+				</Link>
 			</SlideUp>
 		</div>
 	);
 });
 AddressListItem.displayName = 'AddressListItem';
 
-
-const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle: BundleItem; addresses: AddressItem[]; handleClick: (addresses: string[]) => void }) => {
+const BundleListItem = React.memo(({ bundle, addresses }: { bundle: BundleItem; addresses: AddressItem[] }) => {
 	const bundleAddresses = bundle.addresses.map(addr => addresses.find(item => item.address.toLowerCase() === addr.toLowerCase()));
 
 	if (bundleAddresses.some(addr => !addr?.name)) {
@@ -125,8 +124,8 @@ const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle:
 	}
 
 	return (
-		<div className="px-4 mb-4 w-full" onClick={() => handleClick(bundle.addresses)}>
-			<SlideUp delay={0}>
+		<Link href={`/address/${bundle.addresses.join(',')}`} className="px-4 mb-4 w-full">
+			<SlideUp>
 				<div className="p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center">
 					<div className="ml-4 flex-grow">
 						<div className="text-xl text-judge-gray-400">
@@ -138,23 +137,27 @@ const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle:
 					</div>
 				</div>
 			</SlideUp>
-		</div>
+		</Link>
 	);
 });
 BundleListItem.displayName = 'BundleListItem';
 
+
 const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighlight, highlightKey, showOnlyFavorites }) => {
-	const router = useRouter();
 	const [allAddresses, setAllAddresses] = useState<AddressItem[]>([]);
 	const [highlightedIndex, setHighlightedIndex] = useState(-1)
 	const [favorites, setFavorites] = useState<string[]>([]);
 	const [bundleFavorites, setBundleFavorites] = useState<string[][]>([]);
 	const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
 
-	const handleClick = useCallback((addresses: string | string[]) => {
-		const formattedAddresses = Array.isArray(addresses) ? addresses.join(',') : addresses;
-		router.push(`/address/${formattedAddresses}`);
-	}, [router]);
+	const listRef = useRef<List>(null);
+
+	const scrollToTop = () => {
+		if (listRef.current) {
+			listRef.current.scrollToItem(0) // second parameter here could be 'auto', 'smart', 'center', 'end', 'start'
+
+		}
+	};
 
 	const toggleFavorite = useCallback((address: string) => {
 		setFavorites(prev => {
@@ -229,7 +232,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 		}
 	}, [addressToHighlight, allAddresses, highlightKey]);
 
-	const listRef = useRef<List>(null);
 
 	const filteredAddresses = useMemo(() => {
 		return showOnlyFavorites
@@ -254,28 +256,60 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 					<p className="text-xl text-judge-gray-400">No favorites added yet</p>
 				</div>
 			) :
-				<div style={{ height: listHeight }}>
-					<AutoSizer>
-						{({ height, width }) => (
-							<List
-								ref={listRef}
-								height={height}
-								itemCount={filteredAddresses.length}
-								itemSize={100}
-								width={width}
-								className="no-scrollbar"
-								itemData={{
-									addresses: filteredAddresses,
-									handleClick,
-									highlightedIndex,
-									favorites,
-									toggleFavorite
-								}}
-							>
-								{AddressListItem}
-							</List>
-						)}
-					</AutoSizer>
+				<div>
+					<div style={{ height: listHeight }}>
+						<AutoSizer>
+							{({ height, width }) => (
+								<List
+									ref={listRef}
+									height={height}
+									itemCount={filteredAddresses.length}
+									itemSize={100}
+									width={width}
+									className="no-scrollbar"
+									itemData={{
+										addresses: filteredAddresses,
+										highlightedIndex,
+										favorites,
+										toggleFavorite
+									}}
+								>
+									{AddressListItem}
+								</List>
+							)}
+						</AutoSizer>
+						{(!showOnlyFavorites && (
+							<div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+								<motion.div
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 20 }}
+									transition={{ duration: 0.3 }}
+								>
+									<button
+										onClick={scrollToTop}
+										className="bg-judge-gray-800 text-judge-gray-200 px-4 py-2 rounded-full shadow-lg hover:bg-judge-gray-700 transition-colors duration-300"
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											className="h-6 w-6 inline-block mr-2"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M5 10l7-7m0 0l7 7m-7-7v18"
+											/>
+										</svg>
+										Scroll to Top
+									</button>
+								</motion.div>
+							</div>
+						))}
+					</div>
 				</div>
 			}
 			{showOnlyFavorites && (
@@ -283,7 +317,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 					<h2 className="text-2xl font-bold mb-4">Bundles</h2>
 					{bundleItems.length > 0 ? (
 						bundleItems.map((bundle, index) => (
-							<BundleListItem key={index} bundle={bundle} addresses={allAddresses} handleClick={handleClick} />
+							<BundleListItem key={index} bundle={bundle} addresses={allAddresses} />
 						))
 					) : (
 						<p className="text-xl text-judge-gray-400">No favorite bundles added yet</p>

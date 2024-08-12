@@ -6,20 +6,18 @@ import AddressSearch from "@/components/AddressSearch";
 import SlideUp from "@/components/ui/SlideUp";
 import FadeIn from "@/components/ui/FadeIn";
 import Loader from "@/components/Loader/Loader";
-import { Star } from "lucide-react";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { fetchPrimeValue } from "../lib/utils";
-import { getPrimeBalance, fetchENSList } from "../lib/contract";
+import { Star } from "lucide-react";
+import { fetchPrimeValue } from "@/lib/utils";
+import { getPrimeBalance, fetchENSList } from "@/lib/contract";
+import { useAddressesStore } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DEFAULT_PRIME_SUPPLY = 1111111111;
 
 const Home = () => {
-	const [addressesData, setAddressesData] = useState<any[]>([]);
+	const { allAddressesData, setAllAddressesData } = useAddressesStore();
 	const [highlightAddress, setHighlightAddress] = useState<string>("");
 	const [highlightKey, setHighlightKey] = useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
@@ -65,19 +63,24 @@ const Home = () => {
 		try {
 			const response = await fetch("/api/data/addresses");
 			const data = await response.json();
-			setAddressesData(data);
+			setAllAddressesData(data);
 			setLoading(false);
 		} catch (err) {
 			console.error("Error fetching addresses data:", err);
 			setLoading(false);
 		}
-	}, []);
+	}, [setAllAddressesData]);
 
 	useEffect(() => {
+		setLoading(true);
 		fetchPrimeBalance();
 		getPrimeValue();
-		fetchAddressesData();
-	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData]);
+		if (allAddressesData.length === 0) {
+			fetchAddressesData();
+		} else {
+			setLoading(false)
+		}
+	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData, allAddressesData]);
 
 	useEffect(() => {
 		const totalPercentageStaked = (primeBalance / primeSupply) * 100;
@@ -112,11 +115,10 @@ const Home = () => {
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
 	}, []);
-
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
 			<div className="text-2xl md:text-3xl mt-[10vh] md:mt-[20vh] text-judge-gray-200">
-				<SlideUp delay={0.5}>
+				<SlideUp delay={0.4}>
 					<p className="flex flex-col justify-center items-center md:flex-row ">
 						There are currently{" "}
 						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
@@ -128,7 +130,7 @@ const Home = () => {
 						</span>{" "}
 					</p>
 				</SlideUp>
-				<SlideUp delay={1}>
+				<SlideUp delay={0.8}>
 					<p className="flex flex-col justify-center items-center md:flex-row mt-6 mb-8">
 						This is about
 						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
@@ -137,13 +139,13 @@ const Home = () => {
 						of the total circulating supply
 					</p>
 				</SlideUp>
-				<SlideUp delay={1.5}>
+				<SlideUp delay={1.2}>
 					<AddressSearch
 						onAddressDetails={handleAddressDetails}
 						onSearchPosition={handleSearchPosition}
 					/>
 				</SlideUp>
-				<SlideUp delay={2}>
+				<SlideUp delay={1.6}>
 					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2">
 						<h2 className="text-2xl font-bold text-judge-gray-200">Leaderboard</h2>
 						<Star
@@ -157,17 +159,17 @@ const Home = () => {
 				</SlideUp>
 			</div>
 			{loading && (
-				<FadeIn delay={2.2}>
+				<FadeIn delay={1.8}>
 					<div className="relative flex flex-col justify-center items-center text-md font-bold text-center mt-4 h-[200px]">
 						<Loader />
 					</div>
 				</FadeIn>
 			)}
-			{!loading && addressesData.length > 0 && showLeaderboard && (
-				<SlideUp delay={0.1}>
+			{!loading && allAddressesData.length > 0 && showLeaderboard && (
+				<SlideUp>
 					<div ref={leaderboardRef} className="w-full">
 						<Leaderboard
-							addressesData={addressesData}
+							addressesData={allAddressesData}
 							addressToHighlight={highlightAddress}
 							highlightKey={highlightKey}
 							showOnlyFavorites={showOnlyFavorites}

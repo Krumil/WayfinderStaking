@@ -3,11 +3,12 @@
 import Dashboard from "@/components/Dashboard";
 import React, { useEffect, useState } from "react";
 import Loader from "@/components/Loader/Loader";
-import { stakingRewards, isMobile } from "@/lib/utils";
+import { stakingRewards } from "@/lib/utils";
 import { getAddressFromENS, getENSNameFromAddress, fetchENSList } from "@/lib/contract";
 import { useParams } from "next/navigation";
+import { useAddressesStore } from "@/stores/addresses";
 
-interface AddressData {
+interface Address {
 	address: string;
 	ensName: string | null;
 }
@@ -29,10 +30,11 @@ interface AddressInfo {
 
 const AddressPage = () => {
 	const params = useParams<{ address: string }>();
-	const [addresses, setAddresses] = useState<AddressData[]>([]);
+	const [addresses, setAddresses] = useState<Address[]>([]);
 	const [fetchedAddresses, setFetchedAddresses] = useState<boolean>(false);
-	const [totalScore, setTotalScore] = useState<number>(0);
 	const [combinedUserData, setCombinedUserData] = useState<UserData | null>(null);
+	const [addressesData, setAddressesData] = useState<any[]>([]);
+	const { allAddressesData } = useAddressesStore();
 
 	useEffect(() => {
 		fetchENSList();
@@ -41,7 +43,7 @@ const AddressPage = () => {
 	useEffect(() => {
 		const fetchAddresses = async () => {
 			const addressParams = decodeURIComponent(params.address)?.toLowerCase().split(',').map(a => a.trim());
-			const fetchedAddresses: AddressData[] = [];
+			const fetchedAddresses: Address[] = [];
 
 			for (const addressParam of addressParams) {
 				if (addressParam.includes(".eth")) {
@@ -63,17 +65,9 @@ const AddressPage = () => {
 			}
 
 			setAddresses(fetchedAddresses);
-			setAddresses(fetchedAddresses);
 			setFetchedAddresses(true);
 		};
 
-		const fetchTotalScore = async () => {
-			const response = await fetch("/api/data/global");
-			const data = await response.json();
-			setTotalScore(data.total_score);
-		};
-
-		fetchTotalScore();
 		fetchAddresses();
 	}, [params.address]);
 
@@ -81,53 +75,74 @@ const AddressPage = () => {
 		if (addresses.length === 0) return;
 
 		const fetchUserData = async () => {
+			// Check if data exists in the store
+			if (allAddressesData.length > 0) {
+				const relevantData = allAddressesData.filter((item: { address: string; }) =>
+					addresses.some(addr => addr.address.toLowerCase() === item.address.toLowerCase())
+				);
+
+				if (relevantData.length === addresses.length) {
+					// All required data is in the store, use it
+					processCombinedData(relevantData, allAddressesData.length - addresses.length + 1);
+					return;
+				}
+			}
+
+			// If data is not in the store or incomplete, fetch it
 			const response = await fetch("/api/data/addresses", {
 				method: "POST",
 				body: JSON.stringify({ addresses: addresses.map(a => a.address) }),
 				headers: { "Content-Type": "application/json" },
 			});
 			const data: ApiResponse = await response.json();
+			setAddressesData(data.addresses_found);
+			processCombinedData(data.addresses_found, data.total_users);
+		};
 
+		const processCombinedData = (addressInfos: AddressInfo[], totalUsers: number) => {
 			const combinedData: UserData = {
-				extra: { inactive_referrals: 0 },
-				scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
-				prime_sunk: 0,
-				base_scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
-				users_referred: 0,
-				prime_amount_cached: 0,
-				prime_held_duration: 0,
-				longest_caching_time: 0,
+				avatar_count: 0,
 				base_prime_amount_cached: 0,
-				held_prime_before_unlock: false,
+				base_scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
 				echelon_governance_participation: 0,
+				extra: { inactive_referrals: 0 },
+				held_prime_before_unlock: false,
+				longest_caching_time: 0,
 				participated_in_prime_unlock_vote: false,
 				percentage: 0,
-				avatar_count: 0,
-				position: data.position,
-				total_prime_cached: data.total_prime_cached,
-				total_score: data.total_score,
-				total_users: data.total_users,
+				position: 0,
+				prime_amount_cached: 0,
+				prime_held_duration: 0,
+				prime_sunk: 0,
+				scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
+				total_prime_cached: 0,
+				total_score: 0,
+				total_users: totalUsers,
+				users_referred: 0
 			};
 
-			for (const addressInfo of data.addresses_found) {
+			for (const addressInfo of addressInfos) {
 				const userData = addressInfo.data;
 				// Sum all numeric fields
-				combinedData.extra.inactive_referrals += userData.extra?.inactive_referrals || 0;
-				combinedData.scores.prime_score += userData.scores?.prime_score || 0;
-				combinedData.scores.community_score += userData.scores?.community_score || 0;
-				combinedData.scores.initialization_score += userData.scores?.initialization_score || 0;
-				combinedData.prime_sunk += userData.prime_sunk || 0;
-				combinedData.base_scores.prime_score += userData.base_scores?.prime_score || 0;
+				combinedData.avatar_count += userData.avatar_count || 0;
+				combinedData.base_prime_amount_cached += userData.base_prime_amount_cached || 0;
 				combinedData.base_scores.community_score += userData.base_scores?.community_score || 0;
 				combinedData.base_scores.initialization_score += userData.base_scores?.initialization_score || 0;
-				combinedData.users_referred += userData.users_referred || 0;
+				combinedData.base_scores.prime_score += userData.base_scores?.prime_score || 0;
+				combinedData.echelon_governance_participation += userData.echelon_governance_participation || 0;
+				combinedData.extra.inactive_referrals += userData.extra?.inactive_referrals || 0;
+				combinedData.longest_caching_time = Math.max(combinedData.longest_caching_time, userData.longest_caching_time || 0);
 				combinedData.percentage += userData.percentage || 0;
-				combinedData.avatar_count += userData.avatar_count || 0;
+				combinedData.position = userData.position;
 				combinedData.prime_amount_cached += userData.prime_amount_cached || 0;
 				combinedData.prime_held_duration += userData.prime_held_duration || 0;
-				combinedData.longest_caching_time = Math.max(combinedData.longest_caching_time, userData.longest_caching_time || 0);
-				combinedData.base_prime_amount_cached += userData.base_prime_amount_cached || 0;
-				combinedData.echelon_governance_participation += userData.echelon_governance_participation || 0;
+				combinedData.prime_sunk += userData.prime_sunk || 0;
+				combinedData.scores.community_score += userData.scores?.community_score || 0;
+				combinedData.scores.initialization_score += userData.scores?.initialization_score || 0;
+				combinedData.scores.prime_score += userData.scores?.prime_score || 0;
+				combinedData.total_prime_cached += (userData.prime_amount_cached || 0) + (userData.base_prime_amount_cached || 0);
+				combinedData.total_score += userData.total_score || 0;
+				combinedData.users_referred += userData.users_referred || 0;
 
 				// Handle boolean fields with OR operation
 				combinedData.held_prime_before_unlock = combinedData.held_prime_before_unlock || userData.held_prime_before_unlock || false;
@@ -138,12 +153,11 @@ const AddressPage = () => {
 		};
 
 		fetchUserData();
-	}, [addresses]);
+	}, [addresses, setAddressesData]);
 
 	return (
 		<div>
 			{fetchedAddresses &&
-				totalScore !== 0 &&
 				stakingRewards !== 0 &&
 				combinedUserData ? (
 				<div className="flex flex-col h-screen">
@@ -151,7 +165,6 @@ const AddressPage = () => {
 						userAddresses={addresses.map(a => a.address)}
 						userData={combinedUserData}
 						stakingRewards={stakingRewards}
-						allUsersTotalScores={totalScore}
 						addressList={addresses}
 					/>
 				</div>

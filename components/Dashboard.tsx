@@ -19,7 +19,6 @@ interface DashboardProps {
 	userAddresses: string[];
 	userData: UserData | null;
 	stakingRewards: number;
-	allUsersTotalScores: number;
 	addressList: AddressData[];
 }
 
@@ -27,7 +26,6 @@ const Dashboard = ({
 	userAddresses,
 	userData,
 	stakingRewards,
-	allUsersTotalScores,
 	addressList,
 }: DashboardProps) => {
 	const [fullyDiluitedValue, setFullyDiluitedValue] = useState<number>(1000);
@@ -52,7 +50,7 @@ const Dashboard = ({
 	useEffect(() => {
 		if (!userData) return;
 
-		const tokens = (userData.total_score / allUsersTotalScores) * stakingRewards;
+		const tokens = (userData.percentage / 100) * stakingRewards;
 		setUserPrimeCached(userData.total_prime_cached / 1_000_000_000_000_000_000);
 		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
@@ -65,7 +63,7 @@ const Dashboard = ({
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [userData, stakingRewards, allUsersTotalScores, fullyDiluitedValue, primePrice, userPrimeCached]);
+	}, [userData, stakingRewards, fullyDiluitedValue, primePrice, userPrimeCached]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));

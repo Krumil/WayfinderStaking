@@ -5,13 +5,13 @@ import { motion } from "framer-motion";
 
 interface SlideUpProps {
 	children: ReactNode;
-	delay: number;
+	delay?: number;
 	duration?: number;
 }
 
 const SlideUp: React.FC<SlideUpProps> = ({
 	children,
-	delay,
+	delay = 0,
 	duration = 0.5,
 }) => {
 	return (
