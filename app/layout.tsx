@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 		title: 'Wayfinder Staking',
 	},
 	icons: {
-		icon: '/favicon.ico',
-		apple: '/favicon.ico',
+		icon: '/assets/192.png',
+		apple: '/assets/192.png',
 	},
 	openGraph: {
 		title: "Wayfinder Staking",
