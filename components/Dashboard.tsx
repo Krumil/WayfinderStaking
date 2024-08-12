@@ -3,38 +3,40 @@
 import React, { useEffect, useState } from "react";
 import CardStack from "@/components/CardStack";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import AnimatedTitle from "@/components/AnimatedTitle";
 import {
 	promptSupply,
 	fetchPrimeValue,
 	formatNumberWithCommas,
 } from "@/lib/utils";
 
+interface AddressData {
+	address: string;
+	ensName: string | null;
+}
+
 interface DashboardProps {
-	userAddress: string;
+	userAddresses: string[];
 	userData: UserData | null;
 	stakingRewards: number;
-	allUsersTotalScores: number;
-	ensName?: string;
+	addressList: AddressData[];
 }
 
 const Dashboard = ({
-	userAddress,
+	userAddresses,
 	userData,
 	stakingRewards,
-	allUsersTotalScores,
-	ensName,
+	addressList,
 }: DashboardProps) => {
 	const [fullyDiluitedValue, setFullyDiluitedValue] = useState<number>(1000);
 	const [primePrice, setPrimePrice] = useState<number>(0);
 	const [roi, setRoi] = useState<number>(0);
-	const [titleCard, setTitleCard] = useState<string>("");
-	const [totalUserScore, setTotalUserScore] = useState<number>(0);
-	const [userPrimeCached, setUserPrimeCached] = useState<number>(0);
-	const [userEarnedPromptTokens, setUserEarnedPromptTokens] =
-		useState<number>(0);
-	const [userEarnedPromptTokensInUSD, setUserEarnedPromptTokensInUSD] =
-		useState<number>(0);
+	const [userEarnedPromptTokens, setUserEarnedPromptTokens] = useState<number>(0);
+	const [userEarnedPromptTokensInUSD, setUserEarnedPromptTokensInUSD] = useState<number>(0);
 	const [userPercentage, setUserPercentage] = useState<string>("0");
+	const [userPrimeCached, setUserPrimeCached] = useState<number>(0);
+
+	const isMultipleAddresses = userAddresses.length > 1;
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -46,20 +48,11 @@ const Dashboard = ({
 	}, []);
 
 	useEffect(() => {
-		if (!userData) {
-			return;
-		}
-		const totalScore = userData.total_score;
-		const userPrimeCached =
-			userData.total_prime_cached / 1_000_000_000_000_000_000;
-		const percentage = totalScore
-			? ((totalScore / allUsersTotalScores) * 100).toPrecision(15)
-			: "0";
-		const tokens = (totalScore / allUsersTotalScores) * stakingRewards;
+		if (!userData) return;
 
-		setTotalUserScore(totalScore);
-		setUserPrimeCached(userPrimeCached);
-		setUserPercentage(percentage);
+		const tokens = (userData.percentage / 100) * stakingRewards;
+		setUserPrimeCached(userData.total_prime_cached / 1_000_000_000_000_000_000);
+		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
 
 		if (fullyDiluitedValue > 0) {
@@ -70,13 +63,7 @@ const Dashboard = ({
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [
-		stakingRewards,
-		allUsersTotalScores,
-		fullyDiluitedValue,
-		primePrice,
-		userData,
-	]);
+	}, [userData, stakingRewards, fullyDiluitedValue, primePrice, userPrimeCached]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));
@@ -90,49 +77,43 @@ const Dashboard = ({
 	function getOrdinalSymbol(number: number) {
 		const j = number % 10,
 			k = number % 100;
-		if (j == 1 && k != 11) {
-			return "st";
-		}
-		if (j == 2 && k != 12) {
-			return "nd";
-		}
-		if (j == 3 && k != 13) {
-			return "rd";
-		}
+		if (j == 1 && k != 11) return "st";
+		if (j == 2 && k != 12) return "nd";
+		if (j == 3 && k != 13) return "rd";
 		return "th";
 	}
 
-	useEffect(() => {
-		if (ensName && ensName.includes(".eth")) {
-			setTitleCard(ensName);
-		} else {
-			setTitleCard(`${userAddress.slice(0, 4)}...${userAddress.slice(-4)}`);
-		}
-	}, [ensName, userAddress]);
+	const getAddressText = () => {
+		return isMultipleAddresses ? "These addresses have" : "This address has";
+	};
+
+	const getEarningText = () => {
+		return isMultipleAddresses ? "Combined, they are" : "This address is";
+	};
 
 	const stackCards = [
 		{
-			title: <div>{titleCard}</div>,
+			title: <AnimatedTitle addressList={addressList} />,
 			content: (
 				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start">
-					<div className="my-4 md:my-8 w-full">
+					<div className="mb-4 md:my-5 w-full">
 						<div className="w-full">
-							You have staked{" "}
+							{getAddressText()} staked a total of{" "}
 							<span className="md:text-3xl text-gradient-transparent">
-								<AnimatedNumber value={userPrimeCached} />
+								<AnimatedNumber value={userPrimeCached || 0} />
 							</span>{" "}
-							$PRIME, giving you a Contribution Score of{" "}
+							$PRIME, giving a {isMultipleAddresses ? "combined " : ""}Contribution Score of{" "}
 							<span className="md:text-3xl text-gradient-transparent">
-								<AnimatedNumber value={totalUserScore} />
+								<AnimatedNumber value={userData?.total_score || 0} />
 							</span>{" "}
 						</div>
 					</div>
 					<p>
-						This is{" "}
+						{getEarningText()} earning{" "}
 						<span className="md:text-3xl">
 							{formatPercentage(userPercentage)}%{" "}
 						</span>
-						of the total score, earning you{" "}
+						of the total score, which is{" "}
 						<span className="md:text-3xl">
 							<AnimatedNumber value={userEarnedPromptTokens} />
 						</span>{" "}
@@ -151,7 +132,7 @@ const Dashboard = ({
 			),
 		},
 		{
-			title: <div>ROY</div>,
+			title: <div>ROI</div>,
 			content: (
 				<div className="text-xl md:text-2xl">
 					<div className="flex flex-col md:flex-row items-center md:items-start justify-between my-6">
@@ -164,7 +145,7 @@ const Dashboard = ({
 						/>
 					</div>
 					<div>
-						Your{" "}
+						The {isMultipleAddresses ? "combined " : ""}
 						<span className="text-3xl">
 							{formatNumberWithCommas(userEarnedPromptTokens)}{" "}
 						</span>
@@ -172,7 +153,7 @@ const Dashboard = ({
 						<span className="text-gradient-transparent text-3xl">
 							<AnimatedNumber value={userEarnedPromptTokensInUSD} />
 						</span>{" "}
-						$USD, with a ROI of{" "}
+						$USD, with an average ROI of{" "}
 						<span className="text-gradient-transparent text-3xl">
 							{roi.toFixed(2)}%
 						</span>
@@ -181,23 +162,23 @@ const Dashboard = ({
 			),
 		},
 		{
-			title: <div>Badges Info</div>,
+			title: <div>{isMultipleAddresses ? "Addresses Info" : "Address Info"}</div>,
 			content: (
 				<div className="text-base">
 					<div className="flex flex-row items-center justify-between my-2">
-						Inactive Referrals:
+						{isMultipleAddresses ? "Total Inactive" : "Inactive"} Referrals:
 						<span>
 							<AnimatedNumber value={userData?.extra.inactive_referrals || 0} />
 						</span>
 					</div>
 					<div className="flex flex-row items-center justify-between my-2">
-						Users Referred:{" "}
+						{isMultipleAddresses ? "Total Users" : "Users"} Referred:{" "}
 						<span>
 							<AnimatedNumber value={userData?.users_referred || 0} />
 						</span>
 					</div>
 					<div className="flex flex-row items-center justify-between my-2">
-						Prime Held Duration:{" "}
+						{isMultipleAddresses ? "Total Prime" : "Prime"} Held Duration:{" "}
 						<span>
 							<AnimatedNumber
 								value={userData ? userData.prime_held_duration / 86400 : 0}
@@ -213,7 +194,7 @@ const Dashboard = ({
 						</span>
 					</div>
 					<div className="flex flex-row items-center justify-between my-2">
-						Echelon Governance Participation:{" "}
+						{isMultipleAddresses ? "Total Echelon" : "Echelon"} Governance Participation:{" "}
 						<span>
 							<AnimatedNumber
 								value={userData?.echelon_governance_participation || 0}
@@ -221,9 +202,23 @@ const Dashboard = ({
 						</span>
 					</div>
 					<div className="flex flex-row items-center justify-between my-2">
+						Held Prime Before Unlock:{" "}
+						<span>
+							{userData?.held_prime_before_unlock ? "Yes" : "No"}
+						</span>
+					</div>
+					<div className="flex flex-row items-center justify-between my-2">
 						Participated in Prime Unlock Vote:{" "}
 						<span>
 							{userData?.participated_in_prime_unlock_vote ? "Yes" : "No"}
+						</span>
+					</div>
+					<div className="flex flex-row items-center justify-between my-2">
+						Avatar Count:{" "}
+						<span>
+							<AnimatedNumber
+								value={userData?.avatar_count || 0}
+							/>
 						</span>
 					</div>
 				</div>

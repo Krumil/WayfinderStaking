@@ -45,7 +45,7 @@ export default function RootLayout({
 				className={`${inter.className} bg-cover bg-center text-white h-screen flex flex-col justify-center items-center overflow-hidden`}
 				style={{ backgroundImage: `url(/assets/bg.png)` }}
 			>
-				<Header />
+				<Header className="md:pr-8" />
 				<div className="background-gradient" />
 				<div className="scrollable flex-1 w-full overflow-y-auto">
 					{children}

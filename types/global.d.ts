@@ -48,6 +48,8 @@ interface UserData {
 	held_prime_before_unlock: boolean;
 	echelon_governance_participation: number;
 	participated_in_prime_unlock_vote: boolean;
+	percentage: number;
+	avatar_count: number;
 	position: number;
 	total_prime_cached: number;
 	total_score: number;

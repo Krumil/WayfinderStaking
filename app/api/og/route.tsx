@@ -7,6 +7,10 @@ export const runtime = "edge";
 
 // Image generation
 export async function GET(request: Request) {
+	// Prevent caching
+	const { searchParams } = new URL(request.url);
+	const preventCache = searchParams.get('preventCache') || Date.now();
+
 	const responseSupply = await axios.get("https://echelon.io/api/supply/");
 	const primeSupply = responseSupply.data.circulatingSupply;
 
@@ -20,11 +24,6 @@ export async function GET(request: Request) {
 	const totalStakedValueInUSD = primeBalance * primeValue;
 	const totalPercentageStaked = (primeBalance / primeSupply) * 100;
 
-	// const { searchParams } = new URL(request.url);
-	// const primeBalance = Number(searchParams.get("primeBalance"));
-	// const totalStakedValueInUSD = Number(searchParams.get("totalStakedValueInUSD"));
-	// const totalPercentageStaked = Number(searchParams.get("totalPercentageStaked"));
-
 	const formatNumberWithCommas = (number: number) => {
 		return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	};
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
 		new URL("../../Oxanium-Medium.ttf", import.meta.url)
 	).then((res) => res.arrayBuffer());
 
-	return new ImageResponse(
+	const imageResponse = new ImageResponse(
 		(
 			<div
 				style={{
@@ -143,4 +142,9 @@ export async function GET(request: Request) {
 			],
 		}
 	);
+
+	// Set cache control headers
+	imageResponse.headers.set('Cache-Control', 'no-store, max-age=0');
+
+	return imageResponse;
 }

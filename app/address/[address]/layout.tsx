@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
-import dynamic from "next/dynamic";
 import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
 
-const inter = Oxanium({
+const oxanium = Oxanium({
 	weight: ["400", "500", "600", "700"],
 	subsets: ["latin"],
 });
@@ -13,51 +12,68 @@ export async function generateMetadata({
 }: {
 	params: { address: string };
 }): Promise<Metadata> {
-	const addressParam = params.address.toLowerCase();
+	let formattedParams = decodeURIComponent(params.address);
+	const addressParams = formattedParams.toLowerCase().split(',').map(a => a.trim());
+	const addressData = await Promise.all(addressParams.map(async (addressParam) => {
+		let address: string;
+		let ensName: string | null = null;
+		const trimmedParam = addressParam.trim();
 
-	let address: string;
-	let ensName: string | null = null;
 
-	if (addressParam.includes(".eth")) {
-		const hexAddress = await getAddressFromENS(addressParam);
-		if (!hexAddress) {
-			address = addressParam;
+		if (trimmedParam.includes(".eth")) {
+			const hexAddress = await getAddressFromENS(trimmedParam);
+			if (!hexAddress) {
+				address = trimmedParam;
+			} else {
+				address = hexAddress.toLowerCase();
+				ensName = trimmedParam.toLowerCase();
+			}
 		} else {
-			address = hexAddress.toLowerCase();
-			ensName = addressParam.toLowerCase();
+			address = trimmedParam.toLowerCase();
+			ensName = await getENSNameFromAddress(address, true);
 		}
-	} else {
-		address = addressParam;
-		ensName = await getENSNameFromAddress(address, true);
-	}
 
-	const displayName =
-		ensName || `${address.slice(0, 4)}...${address.slice(-4)}`;
+		return { address, ensName };
+	}));
+
+	const displayNames = addressData.map(({ address, ensName }) =>
+		ensName || `${address.slice(0, 4)}...${address.slice(-4)}`
+	);
+
+	const displayName = displayNames.join(", ");
 
 	const baseUrl =
 		process.env.NEXT_PUBLIC_BASE_URL || "https://wayfinder-staking.vercel.app/";
 
+	const title = addressData.length > 1
+		? `Multiple Addresses | Wayfinder Staking`
+		: `${displayName} | Wayfinder Staking`;
+
+	const description = addressData.length > 1
+		? `View combined staking details for multiple addresses on Wayfinder Staking`
+		: `View staking details for ${displayName} on Wayfinder Staking`;
+
 	return {
 		metadataBase: new URL(baseUrl),
-		title: `${displayName} | Wayfinder Staking`,
-		description: `View staking details for ${displayName} on Wayfinder Staking`,
+		title,
+		description,
 		openGraph: {
 			siteName: "Wayfinder Staking",
-			title: `${displayName} | Wayfinder Staking`,
-			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			url: `https://wayfinder-staking.vercel.app/address/${addressParam}`,
+			title,
+			description,
+			url: `https://wayfinder-staking.vercel.app/address/${params.address}`,
 			images: [
 				{
-					url: `https://wayfinder-staking.vercel.app/api/og/${addressParam}`,
+					url: `https://wayfinder-staking.vercel.app/api/og/${params.address}`,
 				},
 			],
 		},
 		twitter: {
 			site: "@Simo1028",
 			card: "summary_large_image",
-			title: `${displayName} | Wayfinder Staking`,
-			description: `View staking details for ${displayName} on Wayfinder Staking`,
-			images: [`https://wayfinder-staking.vercel.app/api/og/${addressParam}`],
+			title,
+			description,
+			images: [`https://wayfinder-staking.vercel.app/api/og/${params.address}`],
 		},
 	};
 }
