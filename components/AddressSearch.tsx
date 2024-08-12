@@ -49,7 +49,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
 	}, [isValidAddresses, addressInput, onSearchPosition]);
 
 	return (
-		<div className="form-control w-full max-w-xl md:max-w-2xl px-4 mx-auto">
+		<div className="form-control w-full md:max-w-2xl mx-auto">
 			<div className="flex flex-col items-center justify-center relative gap-2">
 				<div className="relative w-full mb-2">
 					<Input

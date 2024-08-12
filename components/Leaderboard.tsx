@@ -242,7 +242,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 		if (!showOnlyFavorites) {
 			return '60vh'; // Fixed height when showing all addresses
 		}
-		const itemHeight = 82; // Height of each item in pixels
+		const itemHeight = 100; // Height of each item in pixels
 		const calculatedHeight = Math.min(filteredAddresses.length * itemHeight, window.innerHeight * 0.6);
 		return `${calculatedHeight}px`;
 	}, [showOnlyFavorites, filteredAddresses.length]);
@@ -261,7 +261,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 								ref={listRef}
 								height={height}
 								itemCount={filteredAddresses.length}
-								itemSize={82}
+								itemSize={100}
 								width={width}
 								className="no-scrollbar"
 								itemData={{
