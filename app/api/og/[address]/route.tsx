@@ -52,9 +52,7 @@ export async function GET(
 
 	const userPrimeCached =
 		userData.total_prime_cached / 1_000_000_000_000_000_000;
-	const percentage = userData.total_score
-		? ((userData.total_score / totalScore) * 100).toPrecision(4)
-		: "0";
+	const percentage = userData.percentage.toPrecision(4);
 	const earnedPromptTokens =
 		(userData.total_score / totalScore) * stakingRewards;
 

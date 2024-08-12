@@ -20,7 +20,6 @@ interface DashboardProps {
 	userData: UserData | null;
 	stakingRewards: number;
 	allUsersTotalScores: number;
-	displayName: string;
 	addressList: AddressData[];
 }
 
@@ -29,7 +28,6 @@ const Dashboard = ({
 	userData,
 	stakingRewards,
 	allUsersTotalScores,
-	displayName,
 	addressList,
 }: DashboardProps) => {
 	const [fullyDiluitedValue, setFullyDiluitedValue] = useState<number>(1000);
@@ -54,12 +52,9 @@ const Dashboard = ({
 	useEffect(() => {
 		if (!userData) return;
 
-		const percentage = userData.total_score
-			? ((userData.total_score / allUsersTotalScores) * 100).toPrecision(2)
-			: "0";
 		const tokens = (userData.total_score / allUsersTotalScores) * stakingRewards;
 		setUserPrimeCached(userData.total_prime_cached / 1_000_000_000_000_000_000);
-		setUserPercentage(percentage);
+		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
 
 		if (fullyDiluitedValue > 0) {
@@ -169,7 +164,7 @@ const Dashboard = ({
 			),
 		},
 		{
-			title: <div>Badges Info</div>,
+			title: <div>{isMultipleAddresses ? "Addresses Info" : "Address Info"}</div>,
 			content: (
 				<div className="text-base">
 					<div className="flex flex-row items-center justify-between my-2">
@@ -218,6 +213,14 @@ const Dashboard = ({
 						Participated in Prime Unlock Vote:{" "}
 						<span>
 							{userData?.participated_in_prime_unlock_vote ? "Yes" : "No"}
+						</span>
+					</div>
+					<div className="flex flex-row items-center justify-between my-2">
+						Avatar Count:{" "}
+						<span>
+							<AnimatedNumber
+								value={userData?.avatar_count || 0}
+							/>
 						</span>
 					</div>
 				</div>

@@ -71,12 +71,18 @@ const AnimatedTitle: React.FC<AnimatedTitleProps> = ({ addressList }) => {
 
     const AddressListView = () => (
         <div className="flex flex-wrap">
-            {addressList.map((addressData, index) => (
-                <div key={addressData.address} className="text-lg md:text-4xl text-gradient-transparent rounded-md">
-                    {addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
-                    {index !== addressList.length - 1 && " /\u00A0"}
+            {addressList.length > 3 ? (
+                <div className="text-lg md:text-4xl text-gradient-transparent rounded-md">
+                    {`${addressList.length} addresses`}
                 </div>
-            ))}
+            ) : (
+                addressList.map((addressData, index) => (
+                    <div key={addressData.address} className="text-lg md:text-4xl text-gradient-transparent rounded-md">
+                        {addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
+                        {index !== addressList.length - 1 && " /\u00A0"}
+                    </div>
+                ))
+            )}
         </div>
     );
 

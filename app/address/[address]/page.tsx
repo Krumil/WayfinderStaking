@@ -101,6 +101,8 @@ const AddressPage = () => {
 				held_prime_before_unlock: false,
 				echelon_governance_participation: 0,
 				participated_in_prime_unlock_vote: false,
+				percentage: 0,
+				avatar_count: 0,
 				position: data.position,
 				total_prime_cached: data.total_prime_cached,
 				total_score: data.total_score,
@@ -119,6 +121,8 @@ const AddressPage = () => {
 				combinedData.base_scores.community_score += userData.base_scores?.community_score || 0;
 				combinedData.base_scores.initialization_score += userData.base_scores?.initialization_score || 0;
 				combinedData.users_referred += userData.users_referred || 0;
+				combinedData.percentage += userData.percentage || 0;
+				combinedData.avatar_count += userData.avatar_count || 0;
 				combinedData.prime_amount_cached += userData.prime_amount_cached || 0;
 				combinedData.prime_held_duration += userData.prime_held_duration || 0;
 				combinedData.longest_caching_time = Math.max(combinedData.longest_caching_time, userData.longest_caching_time || 0);
@@ -136,18 +140,6 @@ const AddressPage = () => {
 		fetchUserData();
 	}, [addresses]);
 
-	const generateTitle = (addresses: AddressData[]): string => {
-		if (addresses.length === 1) {
-			const address = addresses[0].address;
-			const ensName = addresses[0].ensName;
-			const displayAddress = ensName || (address.slice(0, isMobile ? 4 : 8) + "..." + address.slice(isMobile ? -4 : -8));
-			return ensName || displayAddress;
-		}
-		return `${addresses.length} Addresses`;
-	};
-
-	const title = generateTitle(addresses);
-
 	return (
 		<div>
 			{fetchedAddresses &&
@@ -160,7 +152,6 @@ const AddressPage = () => {
 						userData={combinedUserData}
 						stakingRewards={stakingRewards}
 						allUsersTotalScores={totalScore}
-						displayName={title}
 						addressList={addresses}
 					/>
 				</div>

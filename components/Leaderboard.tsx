@@ -29,7 +29,7 @@ interface BundleItem {
 
 const calculateTotalScoreMultipleAddresses = (addressesData: any) => {
 	const totalScore = addressesData.reduce((acc: number, curr: any) => {
-		return acc + calculateTotalScore(curr);
+		return acc + calculateTotalScore(curr.data);
 	}, 0);
 	return totalScore;
 };
@@ -92,7 +92,7 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 						)}
 					</div>
 					<div
-						className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110"
+						className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
 						onClick={(e) => {
 							e.stopPropagation();
 							toggleFavorite(item.address);
@@ -101,7 +101,7 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 						{isFavorite ? (
 							<Star
 								fill="#facc15"
-								className="w-6 h-6 text-yellow-400 transition-all duration-300 ease-out scale-110 opacity-100"
+								className="w-6 h-6 text-yellow-400 transition-all duration-300 ease-out scale-105 opacity-100"
 							/>
 						) : (
 							<Star
@@ -115,18 +115,20 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 	);
 });
 
-const BundleListItem = React.memo(({ bundle, index }: { bundle: BundleItem; index: number }) => {
+const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle: BundleItem; addresses: AddressItem[]; handleClick: (addresses: string[]) => void }) => {
+	const bundleAddresses = bundle.addresses.map(addr => addresses.find(item => item.address.toLowerCase() === addr.toLowerCase()));
+
+	if (bundleAddresses.some(addr => !addr?.name)) {
+		return null;
+	}
+
 	return (
-		<div className="px-4 mb-4">
+		<div className="px-4 mb-4 w-full" onClick={() => handleClick(bundle.addresses)}>
 			<SlideUp delay={0}>
 				<div className="p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center">
-					<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
-						<span className="text-lg font-bold text-white">{index + 1}</span>
-					</div>
 					<div className="ml-4 flex-grow">
-						<div className="text-xl md:text-2xl text-judge-gray-200">Bundle of {bundle.addresses.length}</div>
-						<div className="text-sm text-judge-gray-400">
-							{bundle.addresses.map(addr => `${addr.slice(0, 6)}...${addr.slice(-4)}`).join(", ")}
+						<div className="text-xl text-judge-gray-400">
+							{bundleAddresses.map(addr => addr?.name).join(", ")}
 						</div>
 					</div>
 					<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
@@ -146,8 +148,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 	const [bundleFavorites, setBundleFavorites] = useState<string[][]>([]);
 	const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
 
-	const handleClick = useCallback((address: string) => {
-		router.push(`/address/${address}`);
+	const handleClick = useCallback((addresses: string | string[]) => {
+		const formattedAddresses = Array.isArray(addresses) ? addresses.join(',') : addresses;
+		router.push(`/address/${formattedAddresses}`);
 	}, [router]);
 
 	const toggleFavorite = useCallback((address: string) => {
@@ -231,21 +234,31 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 			: allAddresses;
 	}, [allAddresses, favorites, showOnlyFavorites]);
 
+
+	const listHeight = useMemo(() => {
+		if (!showOnlyFavorites) {
+			return '60vh'; // Fixed height when showing all addresses
+		}
+		const itemHeight = 82; // Height of each item in pixels
+		const calculatedHeight = Math.min(filteredAddresses.length * itemHeight, window.innerHeight * 0.6);
+		return `${calculatedHeight}px`;
+	}, [showOnlyFavorites, filteredAddresses.length]);
+
 	return (
 		<div className="max-w-4xl mx-auto">
-			<div className="h-[60vh]">
-				{showOnlyFavorites && filteredAddresses.length === 0 ? (
-					<div className="flex items-start justify-center h-full">
-						<p className="text-xl text-judge-gray-400">No favorites added yet</p>
-					</div>
-				) : (
+			{showOnlyFavorites && filteredAddresses.length === 0 ? (
+				<div className="flex items-start justify-center h-full">
+					<p className="text-xl text-judge-gray-400">No favorites added yet</p>
+				</div>
+			) :
+				<div style={{ height: listHeight }}>
 					<AutoSizer>
 						{({ height, width }) => (
 							<List
 								ref={listRef}
 								height={height}
 								itemCount={filteredAddresses.length}
-								itemSize={100}
+								itemSize={82}
 								width={width}
 								className="no-scrollbar"
 								itemData={{
@@ -260,18 +273,20 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 							</List>
 						)}
 					</AutoSizer>
-				)}
-			</div>
-			<div className="mt-8">
-				<h2 className="text-2xl font-bold mb-4">Favorite Bundles</h2>
-				{bundleItems.length > 0 ? (
-					bundleItems.map((bundle, index) => (
-						<BundleListItem key={index} bundle={bundle} index={index} />
-					))
-				) : (
-					<p className="text-xl text-judge-gray-400">No favorite bundles added yet</p>
-				)}
-			</div>
+				</div>
+			}
+			{showOnlyFavorites && (
+				<div className="mt-8 flex flex-col items-center justify-center">
+					<h2 className="text-2xl font-bold mb-4">Bundles</h2>
+					{bundleItems.length > 0 ? (
+						bundleItems.map((bundle, index) => (
+							<BundleListItem key={index} bundle={bundle} addresses={allAddresses} handleClick={handleClick} />
+						))
+					) : (
+						<p className="text-xl text-judge-gray-400">No favorite bundles added yet</p>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

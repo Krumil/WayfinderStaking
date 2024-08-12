@@ -65,9 +65,8 @@ const Header = () => {
 
 	return (
 		<header
-			className={`z-50 fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${
-				hidden ? "-translate-y-full" : "translate-y-0"
-			}`}
+			className={`z-50 fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
+				}`}
 		>
 			<div className="flex items-center w-1/4">
 				{showBackButton && (
@@ -110,7 +109,7 @@ const Header = () => {
 					Wayfinder Staking Dashboard
 				</h1>
 			</div>
-			<div className="flex items-center justify-end mr-2 cursor-pointer w-1/4 gap-2">
+			<div className="flex items-center justify-end cursor-pointer w-1/4 gap-3">
 				<Link
 					href="https://x.com/Simo1028"
 					target="_blank"
@@ -129,6 +128,13 @@ const Header = () => {
 						width={25}
 						height={25}
 					/>
+				</Link>
+				<Link
+					href="https://cache.wayfinder.ai/"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<Image src="/assets/wayfinder.svg" alt="Wayfinder" width={25} height={25} />
 				</Link>
 			</div>
 		</header>

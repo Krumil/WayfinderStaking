@@ -43,13 +43,6 @@ const Home = () => {
 		return () => clearTimeout(timer);
 	}, []);
 
-	useEffect(() => {
-		const savedShowOnlyFavorites = localStorage.getItem('showOnlyFavorites');
-		if (savedShowOnlyFavorites !== null) {
-			setShowOnlyFavorites(JSON.parse(savedShowOnlyFavorites));
-		}
-	}, []);
-
 	const fetchPrimeBalance = useCallback(async () => {
 		try {
 			const balance = await getPrimeBalance();
@@ -106,21 +99,23 @@ const Home = () => {
 	}, [router]);
 
 	const handleSearchPosition = useCallback((address: string) => {
-		setHighlightAddress(address);
-		setHighlightKey(prevKey => prevKey + 1);
-		if (leaderboardRef.current) {
-			leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-		}
+		setShowOnlyFavorites(false);
+		setTimeout(() => {
+			if (leaderboardRef.current) {
+				leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+			setHighlightAddress(address);
+			setHighlightKey(prevKey => prevKey + 1);
+		}, 100);
 	}, []);
 
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
-		localStorage.setItem('showOnlyFavorites', JSON.stringify(checked));
 	}, []);
 
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
-			<div className="text-2xl md:text-3xl mt-[15vh] md:mt-[20vh] text-judge-gray-200">
+			<div className="text-2xl md:text-3xl mt-[10vh] md:mt-[20vh] text-judge-gray-200">
 				<SlideUp delay={0.5}>
 					<p className="flex flex-col justify-center items-center md:flex-row ">
 						There are currently{" "}
@@ -153,8 +148,8 @@ const Home = () => {
 						<h2 className="text-2xl font-bold text-judge-gray-200">Leaderboard</h2>
 						<Star
 							className={`w-5 h-5 cursor-pointer transition-all duration-300 ease-in-out ${showOnlyFavorites
-									? 'text-yellow-400 fill-yellow-400 scale-110'
-									: 'text-judge-gray-400 hover:text-yellow-400 hover:scale-110'
+								? 'text-yellow-400 fill-yellow-400 scale-110'
+								: 'text-judge-gray-400 hover:text-yellow-400 hover:scale-110'
 								}`}
 							onClick={() => toggleFavoritesFilter(!showOnlyFavorites)}
 						/>
