@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Oxanium } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
@@ -13,7 +13,20 @@ const inter = Oxanium({
 const Header = dynamic(() => import("@/components/Header"));
 const DisclaimerDialog = dynamic(() => import("@/components/DisclaimerDialog"));
 
+
 export const metadata: Metadata = {
+	title: 'Wayfinder Staking',
+	description: 'Here you can see data about the staking of the Wayfinder Protocol',
+	manifest: '/manifest.json',
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: 'default',
+		title: 'Wayfinder Staking',
+	},
+	icons: {
+		icon: '/favicon.ico',
+		apple: '/favicon.ico',
+	},
 	openGraph: {
 		title: "Wayfinder Staking",
 		description:
