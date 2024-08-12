@@ -1217,7 +1217,9 @@ const getApiUrl = (endpoint: string) => {
 	return apiUrl;
 };
 
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const isMobile = typeof window !== 'undefined'
+	? /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent)
+	: false;
 
 export {
 	calculateDailySnapshots,
