@@ -65,7 +65,7 @@ const Dashboard = ({
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [userData, stakingRewards, allUsersTotalScores, fullyDiluitedValue, primePrice]);
+	}, [userData, stakingRewards, allUsersTotalScores, fullyDiluitedValue, primePrice, userPrimeCached]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));

@@ -114,6 +114,8 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 		</div>
 	);
 });
+AddressListItem.displayName = 'AddressListItem';
+
 
 const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle: BundleItem; addresses: AddressItem[]; handleClick: (addresses: string[]) => void }) => {
 	const bundleAddresses = bundle.addresses.map(addr => addresses.find(item => item.address.toLowerCase() === addr.toLowerCase()));
@@ -139,6 +141,7 @@ const BundleListItem = React.memo(({ bundle, addresses, handleClick }: { bundle:
 		</div>
 	);
 });
+BundleListItem.displayName = 'BundleListItem';
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighlight, highlightKey, showOnlyFavorites }) => {
 	const router = useRouter();
