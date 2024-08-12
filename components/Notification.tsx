@@ -36,11 +36,11 @@ const Notification: React.FC<NotificationProps> = ({ title, subtitle, descriptio
 					<span className="flex rounded-full bg-gradient-to-r from-judge-gray-600 to-judge-gray-900 text-white uppercase px-2 text-xs font-bold mr-3 mt-[4px] z-10 animate-bounce">
 						{title}
 					</span>
-					<div className="mr-2 text-left flex-auto z-10 leading-tight">
+					<div className="md:mr-8 text-left flex-auto z-10 leading-tight">
 						<div className='text-[16px] leading-tight'>{subtitle}</div>
 						{description && <div className='text-[12px] leading-tight'>{description}</div>}
 					</div>
-					<button onClick={handleClose} className="absolute top-1/2 -translate-y-1/2 right-5 z-10 text-white text-2xl">
+					<button onClick={handleClose} className="absolute top-1/2 -translate-y-1/2 right-5 md:right-2 z-10 text-white text-4xl md:text-2xl mt-[1px]">
 						&times;
 					</button>
 				</motion.div>

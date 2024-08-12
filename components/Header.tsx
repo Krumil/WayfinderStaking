@@ -6,7 +6,11 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { fetchPrimeValue } from "@/lib/utils";
 
-const Header = () => {
+interface HeaderProps {
+	className?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 	const [primeValue, setPrimeValue] = useState<string>("");
 	const [hidden, setHidden] = useState<boolean>(false);
 	const router = useRouter();
@@ -65,8 +69,8 @@ const Header = () => {
 
 	return (
 		<header
-			className={`z-50 fixed top-0 bg-transparent text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
-				}`}
+			className={`fixed top-0 text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
+				} ${className}`}
 		>
 			<div className="flex items-center w-1/4">
 				{showBackButton && (
