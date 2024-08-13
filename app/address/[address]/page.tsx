@@ -33,7 +33,6 @@ const AddressPage = () => {
 	const [addresses, setAddresses] = useState<Address[]>([]);
 	const [fetchedAddresses, setFetchedAddresses] = useState<boolean>(false);
 	const [combinedUserData, setCombinedUserData] = useState<UserData | null>(null);
-	const [addressesData, setAddressesData] = useState<any[]>([]);
 	const { allAddressesData } = useAddressesStore();
 
 	useEffect(() => {
@@ -95,11 +94,10 @@ const AddressPage = () => {
 				headers: { "Content-Type": "application/json" },
 			});
 			const data: ApiResponse = await response.json();
-			setAddressesData(data.addresses_found);
-			processCombinedData(data.addresses_found, data.total_users);
+			processCombinedData(data.addresses_found, data.total_users, data.position);
 		};
 
-		const processCombinedData = (addressInfos: AddressInfo[], totalUsers: number) => {
+		const processCombinedData = (addressInfos: AddressInfo[], totalUsers: number, position?: number) => {
 			const combinedData: UserData = {
 				avatar_count: 0,
 				base_prime_amount_cached: 0,
@@ -110,7 +108,7 @@ const AddressPage = () => {
 				longest_caching_time: 0,
 				participated_in_prime_unlock_vote: false,
 				percentage: 0,
-				position: 0,
+				position: position || 0,
 				prime_amount_cached: 0,
 				prime_held_duration: 0,
 				prime_sunk: 0,
@@ -133,7 +131,6 @@ const AddressPage = () => {
 				combinedData.extra.inactive_referrals += userData.extra?.inactive_referrals || 0;
 				combinedData.longest_caching_time = Math.max(combinedData.longest_caching_time, userData.longest_caching_time || 0);
 				combinedData.percentage += userData.percentage || 0;
-				combinedData.position = userData.position;
 				combinedData.prime_amount_cached += userData.prime_amount_cached || 0;
 				combinedData.prime_held_duration += userData.prime_held_duration || 0;
 				combinedData.prime_sunk += userData.prime_sunk || 0;
@@ -149,11 +146,19 @@ const AddressPage = () => {
 				combinedData.participated_in_prime_unlock_vote = combinedData.participated_in_prime_unlock_vote || userData.participated_in_prime_unlock_vote || false;
 			}
 
+			if (allAddressesData.length > 0) {
+				const position = allAddressesData.findIndex(addressInfo =>
+					addressInfo.data.total_score <= combinedData.total_score
+				);
+				combinedData.position = position === -1 ? allAddressesData.length : position + 1;
+			}
+
 			setCombinedUserData(combinedData);
 		};
 
 		fetchUserData();
-	}, [addresses, setAddressesData]);
+	}, [addresses, allAddressesData]);
+
 
 	return (
 		<div>
