@@ -1,25 +1,43 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { fetchPrimeValue, isMobile } from "@/lib/utils";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { fetchPrimeValue } from "@/lib/utils";
 
 interface HeaderProps {
 	className?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ className = "" }) => {
-	const [primeValue, setPrimeValue] = useState<string>("");
-	const [hidden, setHidden] = useState<boolean>(false);
 	const router = useRouter();
 	const pathname = usePathname();
+	const deferredPrompt = useRef<any>(null);
+	const [hidden, setHidden] = useState<boolean>(false);
+	const [isInstallable, setIsInstallable] = useState<boolean>(false);
+	const [primeValue, setPrimeValue] = useState<string>("");
 	const [showBackButton, setShowBackButton] = useState<boolean>(
 		pathname !== "/"
 	);
 	const scrollPosition = useRef(0);
 	const scrollableDiv = useRef<HTMLElement | null>(null);
+	const [isMobileView, setIsMobileView] = useState<boolean>(false);
+
+	useEffect(() => {
+		const handleBeforeInstallPrompt = (e: Event) => {
+			e.preventDefault();
+			deferredPrompt.current = e;
+			setIsInstallable(true);
+		};
+
+		window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+		return () => {
+			window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+		};
+	}, []);
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -61,9 +79,33 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 		setShowBackButton(pathname !== "/");
 	}, [pathname]);
 
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobileView(isMobile);
+		};
+
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+
+		return () => {
+			window.removeEventListener('resize', checkMobile);
+		};
+	}, []);
+
 	const handleBackClick = () => {
 		if (pathname !== "/") {
 			router.push("/");
+		}
+	};
+
+	const handleInstall = async () => {
+		if (deferredPrompt.current) {
+			deferredPrompt.current.prompt();
+			const { outcome } = await deferredPrompt.current.userChoice;
+			if (outcome === 'accepted') {
+				setIsInstallable(false);
+			}
+			deferredPrompt.current = null;
 		}
 	};
 
@@ -95,17 +137,29 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 					</button>
 				)}
 				{!showBackButton && (
-					<div className="flex items-center">
-						<Image
-							src="/assets/prime-token.png"
-							alt="PRIME"
-							width={30}
-							height={30}
-						/>
-						{primeValue && (
-							<span className="ml-2 text-xl animate-fadeIn">${primeValue}</span>
+					<>
+						{(!isMobileView || (isMobileView && !isInstallable)) && (
+							<div className="flex items-center">
+								<Image
+									src="/assets/prime-token.png"
+									alt="PRIME"
+									width={30}
+									height={30}
+								/>
+								{primeValue && (
+									<span className="ml-2 text-xl animate-fadeIn">${primeValue}</span>
+								)}
+							</div>
 						)}
-					</div>
+						{isMobileView && isInstallable && (
+							<Button
+								onClick={handleInstall}
+								className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-80 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								Install App
+							</Button>
+						)}
+					</>
 				)}
 			</div>
 			<div className="relative flex-1 text-center hidden md:flex md:justify-center">
@@ -113,7 +167,15 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 					Wayfinder Staking Dashboard
 				</h1>
 			</div>
-			<div className="flex items-center justify-end cursor-pointer w-1/4 gap-3">
+			<div className="flex items-center justify-end gap-3">
+				{!isMobileView && isInstallable && (
+					<Button
+						onClick={handleInstall}
+						className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-80 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+					>
+						Install App
+					</Button>
+				)}
 				<Link
 					href="https://x.com/Simo1028"
 					target="_blank"
