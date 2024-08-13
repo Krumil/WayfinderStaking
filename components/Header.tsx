@@ -167,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 					Wayfinder Staking Dashboard
 				</h1>
 			</div>
-			<div className="flex items-center justify-end gap-3">
+			<div className="flex items-center justify-end gap-3 w-1/4">
 				{!isMobileView && isInstallable && (
 					<Button
 						onClick={handleInstall}
