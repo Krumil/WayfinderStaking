@@ -93,7 +93,7 @@ const Dashboard = ({
 
 	const stackCards = [
 		{
-			title: <AnimatedTitle addressList={addressList} />,
+			title: <AnimatedTitle addressList={addressList} linkedAddresses={userData?.secondary_addresses || []} />,
 			content: (
 				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start">
 					<div className="mb-4 md:my-5 w-full">

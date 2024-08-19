@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import Link from 'next/link';
+import { isMobile } from "@/lib/utils";
 
 interface AddressData {
     address: string;
@@ -9,9 +12,10 @@ interface AddressData {
 
 interface AnimatedTitleProps {
     addressList: AddressData[];
+    linkedAddresses: string[];
 }
 
-const AnimatedTitle: React.FC<AnimatedTitleProps> = ({ addressList }) => {
+const AnimatedTitle: React.FC<AnimatedTitleProps> = ({ addressList, linkedAddresses }) => {
     const [favoriteSingleAddresses, setFavoriteSingleAddresses] = useState<string[]>([]);
     const [favoriteBundles, setFavoriteBundles] = useState<string[][]>([]);
 
@@ -69,22 +73,49 @@ const AnimatedTitle: React.FC<AnimatedTitleProps> = ({ addressList }) => {
         }
     }, [addressList]);
 
-    const AddressListView = () => (
-        <div className="flex flex-wrap">
-            {addressList.length > 3 ? (
-                <div className="text-lg md:text-4xl text-gradient-transparent rounded-md">
-                    {`${addressList.length} addresses`}
-                </div>
-            ) : (
-                addressList.map((addressData, index) => (
-                    <div key={addressData.address} className="text-lg md:text-4xl text-gradient-transparent rounded-md">
-                        {addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
-                        {index !== addressList.length - 1 && " /\u00A0"}
+    const AddressListView = () => {
+        const allAddresses = addressList.map(a => a.address);
+        const allAddressesWithLinked = Array.from(new Set([...allAddresses, ...linkedAddresses.filter(addr => !allAddresses.includes(addr.toLowerCase()))]));
+        const addressesParam = allAddressesWithLinked.join(',');
+        const showLink = linkedAddresses.length > 0 && JSON.stringify(allAddresses) !== JSON.stringify(allAddressesWithLinked);
+        console.log(allAddresses, allAddressesWithLinked, showLink);
+
+        return (
+            <div className="flex flex-wrap">
+                {addressList.length > 3 ? (
+                    <div className="text-lg md:text-4xl text-gradient-transparent rounded-md">
+                        {`${addressList.length} addresses`}
                     </div>
-                ))
-            )}
-        </div>
-    );
+                ) : (
+                    addressList.map((addressData, index) => (
+                        <div key={addressData.address} className="text-lg md:text-4xl text-gradient-transparent rounded-md">
+                            {addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
+                            {index !== addressList.length - 1 && " /\u00A0"}
+                        </div>
+                    ))
+                )}
+                {showLink && (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <div className="flex items-center justify-center ml-2 -mt-1">
+                                <Info
+                                    className="w-5 h-5 md:w-6 md:h-6 text-judge-gray-200 cursor-pointer hover:text-judge-gray-200 transition-colors duration-200"
+                                />
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent side={isMobile ? "top" : "right"} className="w-64 py-2 bg-black bg-opacity-50 rounded-md shadow-xl">
+                            <div className="p-2 text-sm text-judge-gray-200">
+                                This {addressList.length > 1 ? 'group has' : 'wallet has'} linked addresses.
+                                <Link href={`/address/${addressesParam}`} className="pl-1 text-gradient-transparent">
+                                    Click here
+                                </Link> to include them in the calculation.
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                )}
+            </div>
+        );
+    }
 
     const FavoriteButton = () => (
         <motion.div

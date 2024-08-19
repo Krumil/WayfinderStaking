@@ -34,6 +34,7 @@ interface UserData {
 		community_score: number;
 		initialization_score: number;
 	};
+	secondary_addresses: string[];
 	prime_sunk: number;
 	base_scores: {
 		prime_score: number;

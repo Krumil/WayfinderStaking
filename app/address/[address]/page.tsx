@@ -112,6 +112,7 @@ const AddressPage = () => {
 				prime_amount_cached: 0,
 				prime_held_duration: 0,
 				prime_sunk: 0,
+				secondary_addresses: [],
 				scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
 				total_prime_cached: 0,
 				total_score: 0,
@@ -144,6 +145,8 @@ const AddressPage = () => {
 				// Handle boolean fields with OR operation
 				combinedData.held_prime_before_unlock = combinedData.held_prime_before_unlock || userData.held_prime_before_unlock || false;
 				combinedData.participated_in_prime_unlock_vote = combinedData.participated_in_prime_unlock_vote || userData.participated_in_prime_unlock_vote || false;
+
+				combinedData.secondary_addresses.push(...(userData.secondary_addresses || []));
 			}
 
 			if (allAddressesData.length > 0) {
