@@ -29,6 +29,11 @@ interface UserData {
 	extra: {
 		inactive_referrals: number;
 	};
+	merged_score_data: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
 	scores: {
 		prime_score: number;
 		community_score: number;
@@ -51,7 +56,7 @@ interface UserData {
 	participated_in_prime_unlock_vote: boolean;
 	percentage: number;
 	avatar_count: number;
-	position: number;
+	leaderboard_rank: number;
 	total_prime_cached: number;
 	total_score: number;
 	total_users: number;

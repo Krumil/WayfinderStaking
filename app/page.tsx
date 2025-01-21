@@ -5,22 +5,26 @@ import Leaderboard from "@/components/Leaderboard";
 import AddressSearch from "@/components/AddressSearch";
 import SlideUp from "@/components/ui/SlideUp";
 import FadeIn from "@/components/ui/FadeIn";
-import Loader from "@/components/Loader/Loader";
+import Loader from "@/components/ui/loader";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Star } from "lucide-react";
 import { fetchPrimeValue } from "@/lib/utils";
 import { getPrimeBalance, fetchENSList } from "@/lib/contract";
-import { useAddressesStore } from "@/stores/addresses";
+import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
 
 const DEFAULT_PRIME_SUPPLY = 1111111111;
+const PAGE_SIZE = 10;
 
 const Home = () => {
 	const { allAddressesData, setAllAddressesData } = useAddressesStore();
 	const [highlightAddress, setHighlightAddress] = useState<string>("");
 	const [highlightKey, setHighlightKey] = useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
+	const [loadingMore, setLoadingMore] = useState<boolean>(false);
 	const [primeBalance, setPrimeBalance] = useState<number>(0);
 	const [primeSupply, setPrimeSupply] = useState<number>(DEFAULT_PRIME_SUPPLY);
 	const [primeValue, setPrimeValue] = useState<number>(0);
@@ -28,18 +32,13 @@ const Home = () => {
 	const [totalPercentageStaked, setTotalPercentageStaked] = useState<number>(0);
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
 	const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [hasMore, setHasMore] = useState<boolean>(true);
+	const [totalPages, setTotalPages] = useState<number>(1);
 	const leaderboardRef = useRef<HTMLDivElement>(null);
+	const loadMoreRef = useRef<HTMLDivElement>(null);
 
 	const router = useRouter();
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setShowLeaderboard(true);
-		}, 2500);
-
-		fetchENSList();
-		return () => clearTimeout(timer);
-	}, []);
 
 	const fetchPrimeBalance = useCallback(async () => {
 		try {
@@ -59,28 +58,65 @@ const Home = () => {
 		setPrimeValue(parseFloat(value));
 	}, []);
 
-	const fetchAddressesData = useCallback(async () => {
+	const fetchAddressesData = useCallback(async (page: number = 1, append: boolean = false) => {
 		try {
-			const response = await fetch("/api/data/addresses");
+			setLoadingMore(true);
+			const response = await fetch(`/api/data/addresses?page=${page}&pageSize=${PAGE_SIZE}`);
 			const data = await response.json();
-			setAllAddressesData(data);
+
+			if (append) {
+				setAllAddressesData(prev => [...prev, ...data.data] as AddressData[]);
+			} else {
+				setAllAddressesData(data.data as AddressData[]);
+			}
+
+			setTotalPages(data.total_pages);
+			setHasMore(page < data.total_pages);
 			setLoading(false);
+			setLoadingMore(false);
 		} catch (err) {
 			console.error("Error fetching addresses data:", err);
 			setLoading(false);
+			setLoadingMore(false);
 		}
 	}, [setAllAddressesData]);
 
 	useEffect(() => {
+		const timer = setTimeout(() => {
+			setShowLeaderboard(true);
+		}, 2500);
+
+		fetchENSList();
+		return () => clearTimeout(timer);
+	}, []);
+
+	// Initial data loading
+	useEffect(() => {
 		setLoading(true);
 		fetchPrimeBalance();
 		getPrimeValue();
-		if (allAddressesData.length === 0) {
-			fetchAddressesData();
+		fetchAddressesData(1, false);
+	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData]);
+
+	// Handle filter changes
+	useEffect(() => {
+		if (showOnlyFavorites) {
+			setCurrentPage(1);
+			setHasMore(false);
 		} else {
-			setLoading(false)
+			setCurrentPage(1);
+			setAllAddressesData([]);
+			fetchAddressesData(1, false);
 		}
-	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData, allAddressesData]);
+	}, [showOnlyFavorites, fetchAddressesData]);
+
+	const handleLoadMore = useCallback(() => {
+		if (!loadingMore && currentPage < totalPages && !showOnlyFavorites) {
+			const nextPage = currentPage + 1;
+			setCurrentPage(nextPage);
+			fetchAddressesData(nextPage, true);
+		}
+	}, [currentPage, loadingMore, totalPages, fetchAddressesData, showOnlyFavorites]);
 
 	useEffect(() => {
 		const totalPercentageStaked = (primeBalance / primeSupply) * 100;
@@ -101,20 +137,50 @@ const Home = () => {
 		}
 	}, [router]);
 
-	const handleSearchPosition = useCallback((address: string) => {
+	const handleSearchPosition = useCallback(async (address: string) => {
 		setShowOnlyFavorites(false);
-		setTimeout(() => {
+		setLoading(true);
+
+		try {
+			// Search for the address and get all addresses above it
+			const searchResponse = await fetch(`/api/data/search?address=${address}`);
+			const searchData = await searchResponse.json();
+
+			if (searchData.error) {
+				toast.error("Address not found in the leaderboard");
+				setLoading(false);
+				return;
+			}
+
+			// Update the leaderboard with all addresses up to the searched one
+			setAllAddressesData(searchData.addresses as AddressData[]);
+			setCurrentPage(Math.floor(searchData.position / PAGE_SIZE) + 1);
+			setTotalPages(searchData.total_pages);
+			setHasMore(true); // We can load more since we're at the searched position
+
+			// Scroll to the leaderboard first
 			if (leaderboardRef.current) {
 				leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			}
-			setHighlightAddress(address);
-			setHighlightKey(prevKey => prevKey + 1);
-		}, 100);
+
+			// Then highlight the address (this will trigger the scroll to the specific item)
+			setTimeout(() => {
+				setHighlightAddress(address);
+				setHighlightKey(prevKey => prevKey + 1);
+			}, 100);
+
+		} catch (error) {
+			console.error("Error searching address:", error);
+			toast.error("Error searching for address");
+		} finally {
+			setLoading(false);
+		}
 	}, []);
 
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
 	}, []);
+
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
 			<div className="text-2xl md:text-3xl mt-[10vh] md:mt-[20vh] text-judge-gray-200">
@@ -165,7 +231,7 @@ const Home = () => {
 					</div>
 				</FadeIn>
 			)}
-			{!loading && allAddressesData.length > 0 && showLeaderboard && (
+			{!loading && Array.isArray(allAddressesData) && allAddressesData.length > 0 && showLeaderboard && (
 				<SlideUp>
 					<div ref={leaderboardRef} className="w-full">
 						<Leaderboard
@@ -173,6 +239,8 @@ const Home = () => {
 							addressToHighlight={highlightAddress}
 							highlightKey={highlightKey}
 							showOnlyFavorites={showOnlyFavorites}
+							onLoadMore={handleLoadMore}
+							isLoadingMore={loadingMore}
 						/>
 					</div>
 				</SlideUp>

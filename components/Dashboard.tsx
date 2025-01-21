@@ -4,6 +4,10 @@ import React, { useEffect, useState } from "react";
 import CardStack from "@/components/CardStack";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import AnimatedTitle from "@/components/AnimatedTitle";
+import Loader from "@/components/Loader/Loader";
+import { Button } from "@/components/ui/button";
+import { Share2, Download } from "lucide-react";
+import toast from "react-hot-toast";
 import {
 	promptSupply,
 	fetchPrimeValue,
@@ -95,7 +99,7 @@ const Dashboard = ({
 		{
 			title: <AnimatedTitle addressList={addressList} linkedAddresses={userData?.secondary_addresses || []} />,
 			content: (
-				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start">
+				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start relative min-h-[200px]">
 					<div className="mb-4 md:my-5 w-full">
 						<div className="w-full">
 							{getAddressText()} staked a total of{" "}
@@ -108,7 +112,7 @@ const Dashboard = ({
 							</span>{" "}
 						</div>
 					</div>
-					<p>
+					<p className="mb-16">
 						{getEarningText()} earning{" "}
 						<span className="md:text-3xl">
 							{formatPercentage(userPercentage)}%{" "}
@@ -119,13 +123,33 @@ const Dashboard = ({
 						</span>{" "}
 						$PROMPT.
 					</p>
-					<div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-sm md:text-base bg-transparent mb-2 text-gradient-transparent">
-						<div className="flex justify-end items-end text-3xl leading-none">
-							<div>{userData?.position || 0}</div>
-							<sup className="text-xs text-gradient-transparent self-start">
-								{getOrdinalSymbol(userData?.position || 0)}
-							</sup>
-							<span className="text-sm">/ {userData?.total_users || 0}</span>
+					<div className="absolute -bottom-[20px] w-full flex justify-between items-end px-4 pb-2">
+						<div className="flex-1" /> {/* Spacer */}
+						<div className="text-sm md:text-base bg-transparent text-gradient-transparent">
+							<div className="flex justify-end items-baseline text-3xl leading-none">
+								<div>{userData?.leaderboard_rank || 0}</div>
+								<sup className="text-lg text-gradient-transparent">
+									{getOrdinalSymbol(userData?.leaderboard_rank || 0)}
+								</sup>
+								<span className="text-lg flex items-baseline">/ {userData?.total_users || 0}</span>
+							</div>
+						</div>
+						<div className="flex-1 flex justify-end">
+							<div
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									handleImageDownload();
+								}}
+								className="pointer-events-auto"
+							>
+								<Button
+									size="sm"
+									className="bg-gradient-to-r from-judge-gray-200 to-judge-gray-300 text-judge-gray-950 hover:from-judge-gray-300 hover:to-judge-gray-400 transition-all duration-300 flex items-center gap-2"
+								>
+									<Download className="w-4 h-4" />
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -226,7 +250,67 @@ const Dashboard = ({
 		},
 	];
 
-	return <div>{userData && <CardStack cards={stackCards} />}</div>;
+
+	const handleImageDownload = async () => {
+		try {
+			// Get the card image URL for the current address with cache busting
+			const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wayfinder-staking.vercel.app';
+			const timestamp = Date.now();
+			const cardImageUrl = `${baseUrl}/api/card-image/${userAddresses[0]}?t=${timestamp}`;
+
+			// Fetch the image
+			const response = await fetch(cardImageUrl, {
+				headers: {
+					'Cache-Control': 'no-cache, no-store, must-revalidate',
+					'Pragma': 'no-cache',
+					'Expires': '0'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to fetch image');
+			}
+
+			const blob = await response.blob();
+
+			// Create a download link
+			const downloadUrl = window.URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = downloadUrl;
+
+			// Get ENS name or truncated address for filename
+			const addressDisplay = addressList.find(a => a.address.toLowerCase() === userAddresses[0].toLowerCase())?.ensName ||
+				userAddresses[0].slice(0, 6);
+			link.download = `wayfinder-staking-${addressDisplay}.png`;
+
+			// Trigger download
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+
+			// Clean up
+			window.URL.revokeObjectURL(downloadUrl);
+
+			toast.success('Image downloaded successfully!');
+		} catch (error) {
+			console.error('Download error:', error);
+			toast.error('Failed to download image. Please try again.');
+		}
+	};
+
+	return (
+		<div>
+			{userData ? (
+				<div className="flex flex-col h-screen">
+					<CardStack cards={stackCards} />
+				</div>
+			) : (
+				<div className="flex justify-center items-center h-screen">
+					<Loader />
+				</div>
+			)}
+		</div>
+	);
 };
 
 export default Dashboard;

@@ -5,7 +5,6 @@ import { getApiUrl } from "@/lib/utils";
 export async function GET() {
 	try {
 		const apiUrl = getApiUrl("/ens");
-		debugger;
 		const response = await axios.get(apiUrl);
 		return NextResponse.json(response.data);
 	} catch (error) {

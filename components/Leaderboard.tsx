@@ -14,6 +14,8 @@ interface LeaderboardProps {
 	addressToHighlight: string;
 	highlightKey: number;
 	showOnlyFavorites: boolean;
+	onLoadMore: () => void;
+	isLoadingMore: boolean;
 }
 
 interface AddressItem {
@@ -60,57 +62,57 @@ const calculateTotalScore = (data: any) => {
 const AddressListItem = React.memo(({ index, style, data }: any) => {
 	const { addresses, favorites, toggleFavorite } = data;
 	const item = addresses[index];
-	const ordinalIndicator = getOrdinalIndicator(item.data.position);
+	console.log(item.data.leaderboard_rank);
+	const ordinalIndicator = getOrdinalIndicator(item.data.leaderboard_rank);
 	const showOnlyAddress = item.name === item.address || item.name === `${item.address.slice(0, isMobile ? 4 : 8)}...${item.address.slice(isMobile ? -4 : -8)}`;
 	const isFavorite = favorites.includes(item.address.toLowerCase());
+
 	return (
-		<div style={style} className="px-4">
-			<SlideUp>
-				<Link href={`/address/${item.address}`} className={`p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center cursor-pointer transition-colors duration-200 ${data.highlightedIndex === index ? 'bg-[#0b0f0d]' : 'hover:bg-[#0b0f0d] hover:bg-opacity-40'}`}>
-					<div className="flex items-center space-x-4 flex-grow">
-						<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
-							<span className="text-lg font-bold text-white">{item.data.position}<sup className="text-xs">{ordinalIndicator}</sup></span>
-						</div>
-						<div className="flex flex-col">
-							<div className="text-xl md:text-2xl text-judge-gray-200">{item.name}</div>
-							{!showOnlyAddress && (
-								<div className="text-sm text-judge-gray-400">
-									{item.address.slice(0, isMobile ? 4 : 8)}...{item.address.slice(isMobile ? -4 : -8)}
-								</div>
-							)}
-						</div>
+		<div style={style} className="px-4 py-2">
+			<Link href={`/address/${item.address}`} className={`p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center cursor-pointer transition-colors duration-200 ${data.highlightedIndex === index ? 'bg-[#0b0f0d]' : 'hover:bg-[#0b0f0d] hover:bg-opacity-40'}`}>
+				<div className="flex items-center space-x-4 flex-grow">
+					<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
+						<span className="text-lg font-bold text-white">{item.data.leaderboard_rank}<sup className="text-xs">{ordinalIndicator}</sup></span>
 					</div>
-					<div className="flex flex-col items-end">
-						<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
-							{formatNumberWithCommas(calculateTotalScore(item.data))}{!isMobile && " CS"}
-						</div>
-						{item.prime_amount_cached && (
-							<div className="text-judge-gray-200 text-sm md:text-base">
-								{item.prime_amount_cached.toFixed(2).toLocaleString()} $PRIME
+					<div className="flex flex-col">
+						<div className="text-xl md:text-2xl text-judge-gray-200">{item.name}</div>
+						{!showOnlyAddress && (
+							<div className="text-sm text-judge-gray-400">
+								{item.address.slice(0, isMobile ? 4 : 8)}...{item.address.slice(isMobile ? -4 : -8)}
 							</div>
 						)}
 					</div>
-					<div
-						className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
-						onClick={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							toggleFavorite(item.address);
-						}}
-					>
-						{isFavorite ? (
-							<Star
-								fill="#facc15"
-								className="w-6 h-6 text-yellow-400 transition-all duration-300 ease-out scale-105 opacity-100"
-							/>
-						) : (
-							<Star
-								className="w-6 h-6 text-judge-gray-400 hover:text-yellow-400 transition-all duration-300 ease-out scale-100 opacity-100 hover:scale-110"
-							/>
-						)}
+				</div>
+				<div className="flex flex-col items-end">
+					<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
+						{formatNumberWithCommas(calculateTotalScore(item.data))}{!isMobile && " CS"}
 					</div>
-				</Link>
-			</SlideUp>
+					{item.prime_amount_cached && (
+						<div className="text-judge-gray-200 text-sm md:text-base">
+							{item.prime_amount_cached.toFixed(2).toLocaleString()} $PRIME
+						</div>
+					)}
+				</div>
+				<div
+					className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
+					onClick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						toggleFavorite(item.address);
+					}}
+				>
+					{isFavorite ? (
+						<Star
+							fill="#facc15"
+							className="w-6 h-6 text-yellow-400 transition-all duration-300 ease-out scale-105 opacity-100"
+						/>
+					) : (
+						<Star
+							className="w-6 h-6 text-judge-gray-400 hover:text-yellow-400 transition-all duration-300 ease-out scale-100 opacity-100 hover:scale-110"
+						/>
+					)}
+				</div>
+			</Link>
 		</div>
 	);
 });
@@ -143,14 +145,23 @@ const BundleListItem = React.memo(({ bundle, addresses }: { bundle: BundleItem; 
 BundleListItem.displayName = 'BundleListItem';
 
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighlight, highlightKey, showOnlyFavorites }) => {
+const Leaderboard: React.FC<LeaderboardProps> = ({
+	addressesData,
+	addressToHighlight,
+	highlightKey,
+	showOnlyFavorites,
+	onLoadMore,
+	isLoadingMore
+}) => {
 	const [allAddresses, setAllAddresses] = useState<AddressItem[]>([]);
 	const [highlightedIndex, setHighlightedIndex] = useState(-1)
 	const [favorites, setFavorites] = useState<string[]>([]);
 	const [bundleFavorites, setBundleFavorites] = useState<string[][]>([]);
 	const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
+	const [ensCache, setEnsCache] = useState<Record<string, string>>({});
 
 	const listRef = useRef<List>(null);
+	const prevScrollOffset = useRef(0);
 
 	const scrollToTop = () => {
 		if (listRef.current) {
@@ -170,13 +181,34 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 	}, []);
 
 	const fetchENSNames = useCallback(async (addresses: any[]) => {
-		return await Promise.all(
-			addresses.map(async (item) => {
+		const newAddresses = addresses.map(item => ({
+			...item,
+			name: ensCache[item.address.toLowerCase()] || item.address
+		}));
+		setAllAddresses(newAddresses);
+
+		// Fetch ENS names for addresses not in cache
+		const uncachedAddresses = addresses.filter(item => !ensCache[item.address.toLowerCase()]);
+		if (uncachedAddresses.length > 0) {
+			const ensPromises = uncachedAddresses.map(async (item) => {
 				const ensName = await getENSNameFromAddress(item.address, true);
-				return { ...item, name: ensName || item.address };
-			})
-		);
-	}, []);
+				return { address: item.address.toLowerCase(), name: ensName || item.address };
+			});
+
+			const ensResults = await Promise.all(ensPromises);
+			const newCache = { ...ensCache };
+			ensResults.forEach(result => {
+				newCache[result.address] = result.name;
+			});
+			setEnsCache(newCache);
+
+			// Update addresses with new ENS names
+			setAllAddresses(prev => prev.map(item => ({
+				...item,
+				name: newCache[item.address.toLowerCase()] || item.name
+			})));
+		}
+	}, [ensCache]);
 
 	useEffect(() => {
 		const storedFavorites = localStorage.getItem('favoriteAddresses');
@@ -191,12 +223,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 	}, []);
 
 	useEffect(() => {
-		const loadAddresses = async () => {
-			const addressesWithENS = await fetchENSNames(addressesData);
-			setAllAddresses(addressesWithENS);
-		};
-
-		loadAddresses();
+		fetchENSNames(addressesData);
 	}, [fetchENSNames, addressesData]);
 
 	useEffect(() => {
@@ -249,6 +276,27 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 		return `${calculatedHeight}px`;
 	}, [showOnlyFavorites, filteredAddresses.length]);
 
+	// Add onScroll handler for infinite loading
+	const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
+		if (scrollUpdateWasRequested) return;
+
+		const scrollingDown = scrollOffset > prevScrollOffset.current;
+		prevScrollOffset.current = scrollOffset;
+
+		if (!showOnlyFavorites && scrollingDown) {
+			const listElement = (listRef.current as any)?._outerRef;
+			if (!listElement) return;
+
+			const scrolledToBottom =
+				Math.ceil(scrollOffset + listElement.clientHeight) >=
+				listElement.scrollHeight - 100; // 100px threshold
+
+			if (scrolledToBottom && !isLoadingMore) {
+				onLoadMore();
+			}
+		}
+	}, [showOnlyFavorites, isLoadingMore, onLoadMore]);
+
 	return (
 		<div className="max-w-4xl mx-auto">
 			{showOnlyFavorites && filteredAddresses.length === 0 ? (
@@ -267,6 +315,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ addressesData, addressToHighl
 									itemSize={100}
 									width={width}
 									className="no-scrollbar"
+									onScroll={handleScroll}
+									overscanCount={5}
 									itemData={{
 										addresses: filteredAddresses,
 										highlightedIndex,

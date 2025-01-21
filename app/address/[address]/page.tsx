@@ -108,12 +108,13 @@ const AddressPage = () => {
 				longest_caching_time: 0,
 				participated_in_prime_unlock_vote: false,
 				percentage: 0,
-				position: position || 0,
+				leaderboard_rank: position || 0,
 				prime_amount_cached: 0,
 				prime_held_duration: 0,
 				prime_sunk: 0,
 				secondary_addresses: [],
 				scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
+				merged_score_data: { prime_score: 0, community_score: 0, initialization_score: 0 },
 				total_prime_cached: 0,
 				total_score: 0,
 				total_users: totalUsers,
@@ -138,8 +139,15 @@ const AddressPage = () => {
 				combinedData.scores.community_score += userData.scores?.community_score || 0;
 				combinedData.scores.initialization_score += userData.scores?.initialization_score || 0;
 				combinedData.scores.prime_score += userData.scores?.prime_score || 0;
+				combinedData.merged_score_data.community_score += userData.merged_score_data?.community_score || 0;
+				combinedData.merged_score_data.initialization_score += userData.merged_score_data?.initialization_score || 0;
+				combinedData.merged_score_data.prime_score += userData.merged_score_data?.prime_score || 0;
 				combinedData.total_prime_cached += (userData.prime_amount_cached || 0) + (userData.base_prime_amount_cached || 0);
-				combinedData.total_score += userData.total_score || 0;
+				combinedData.total_score = (
+					combinedData.merged_score_data.prime_score +
+					combinedData.merged_score_data.community_score +
+					combinedData.merged_score_data.initialization_score
+				);
 				combinedData.users_referred += userData.users_referred || 0;
 
 				// Handle boolean fields with OR operation
@@ -150,10 +158,10 @@ const AddressPage = () => {
 			}
 
 			if (allAddressesData.length > 0) {
-				const position = allAddressesData.findIndex(addressInfo =>
-					addressInfo.data.total_score <= combinedData.total_score
+				// Find the highest leaderboard rank (lowest number) among all addresses
+				combinedData.leaderboard_rank = Math.min(
+					...addressInfos.map(info => info.data.leaderboard_rank || Number.MAX_SAFE_INTEGER)
 				);
-				combinedData.position = position === -1 ? allAddressesData.length : position + 1;
 			}
 
 			setCombinedUserData(combinedData);
