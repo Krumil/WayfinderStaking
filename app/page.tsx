@@ -9,7 +9,7 @@ import Loader from "@/components/ui/loader";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Star } from "lucide-react";
 import { fetchPrimeValue } from "@/lib/utils";
-import { getPrimeBalance, fetchENSList } from "@/lib/contract";
+import { getPrimeBalance, getENSNameFromAddress, getAddressFromENS } from "@/lib/contract";
 import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,6 @@ const PAGE_SIZE = 10;
 const Home = () => {
 	const { allAddressesData, setAllAddressesData } = useAddressesStore();
 	const [highlightAddress, setHighlightAddress] = useState<string>("");
-	const [highlightKey, setHighlightKey] = useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [loadingMore, setLoadingMore] = useState<boolean>(false);
 	const [primeBalance, setPrimeBalance] = useState<number>(0);
@@ -64,6 +63,11 @@ const Home = () => {
 			const response = await fetch(`/api/data/addresses?page=${page}&pageSize=${PAGE_SIZE}`);
 			const data = await response.json();
 
+			// Start ENS resolution in the background for new addresses
+			data.data.forEach((item: AddressData) => {
+				getENSNameFromAddress(item.address, true).catch(console.error);
+			});
+
 			if (append) {
 				setAllAddressesData(prev => [...prev, ...data.data] as AddressData[]);
 			} else {
@@ -86,7 +90,6 @@ const Home = () => {
 			setShowLeaderboard(true);
 		}, 2500);
 
-		fetchENSList();
 		return () => clearTimeout(timer);
 	}, []);
 
@@ -139,35 +142,66 @@ const Home = () => {
 
 	const handleSearchPosition = useCallback(async (address: string) => {
 		setShowOnlyFavorites(false);
-		setLoading(true);
 
 		try {
-			// Search for the address and get all addresses above it
-			const searchResponse = await fetch(`/api/data/search?address=${address}`);
+			let foundInLoaded: AddressData | undefined;
+			if (address.endsWith(".eth")) {
+				const ensAddress = await getAddressFromENS(address);
+				if (ensAddress) {
+					address = ensAddress;
+				}
+			}
+			const normalizedSearchAddress = address.toLowerCase();
+			foundInLoaded = allAddressesData.find(
+				(item: AddressData) => item.address.toLowerCase() === normalizedSearchAddress
+			);
+
+			if (foundInLoaded) {
+				// If found, highlight it without making an API call
+				setHighlightAddress(foundInLoaded.address);
+
+				// Ensure the address is visible in the current view
+				const position = allAddressesData.findIndex(
+					(item: AddressData) => item.address.toLowerCase() === foundInLoaded.address.toLowerCase()
+				);
+				const currentPageNum = Math.floor(position / PAGE_SIZE) + 1;
+				setCurrentPage(currentPageNum);
+
+				return;
+			}
+
+			setLoading(true);
+			// If not found in loaded addresses, proceed with API call
+			const searchResponse = await fetch(`/api/data/search?query=${address}`);
 			const searchData = await searchResponse.json();
 
 			if (searchData.error) {
-				toast.error("Address not found in the leaderboard");
+				toast.error(searchData.error);
 				setLoading(false);
 				return;
 			}
 
-			// Update the leaderboard with all addresses up to the searched one
+			// Update the leaderboard with addresses up to the next round number
 			setAllAddressesData(searchData.addresses as AddressData[]);
-			setCurrentPage(Math.floor(searchData.position / PAGE_SIZE) + 1);
-			setTotalPages(searchData.total_pages);
-			setHasMore(true); // We can load more since we're at the searched position
 
-			// Scroll to the leaderboard first
-			if (leaderboardRef.current) {
-				leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			// Calculate current page based on the position
+			const currentPageNum = Math.floor(searchData.position / PAGE_SIZE) + 1;
+			setCurrentPage(currentPageNum);
+
+			// Set total pages based on total addresses
+			setTotalPages(Math.ceil(searchData.total_addresses / PAGE_SIZE));
+
+			// We can load more if we haven't reached the total addresses
+			setHasMore(searchData.next_round_number < searchData.total_addresses);
+
+			// Find the address to highlight
+			const addressToHighlight = searchData.addresses.find(
+				(item: AddressData) => item.address.toLowerCase() === searchData.resolved_address.toLowerCase()
+			)?.address;
+
+			if (addressToHighlight) {
+				setHighlightAddress(addressToHighlight);
 			}
-
-			// Then highlight the address (this will trigger the scroll to the specific item)
-			setTimeout(() => {
-				setHighlightAddress(address);
-				setHighlightKey(prevKey => prevKey + 1);
-			}, 100);
 
 		} catch (error) {
 			console.error("Error searching address:", error);
@@ -175,7 +209,7 @@ const Home = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [allAddressesData]);
 
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
@@ -237,7 +271,6 @@ const Home = () => {
 						<Leaderboard
 							addressesData={allAddressesData}
 							addressToHighlight={highlightAddress}
-							highlightKey={highlightKey}
 							showOnlyFavorites={showOnlyFavorites}
 							onLoadMore={handleLoadMore}
 							isLoadingMore={loadingMore}

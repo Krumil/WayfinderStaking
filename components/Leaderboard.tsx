@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { FixedSizeList as List } from "react-window";
+import { FixedSizeList as List, ListOnScrollProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
-import SlideUp from "@/components/ui/SlideUp";
 import { Star } from "lucide-react";
-import { formatNumberWithCommas, getOrdinalIndicator, isMobile } from "@/lib/utils";
+import { formatNumberWithCommas, getOrdinalIndicator, isMobile, truncateText } from "@/lib/utils";
 import { getENSNameFromAddress } from "@/lib/contract";
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
+import Loader from "@/components/ui/loader";
 
 interface LeaderboardProps {
 	addressesData: any[];
 	addressToHighlight: string;
-	highlightKey: number;
 	showOnlyFavorites: boolean;
 	onLoadMore: () => void;
 	isLoadingMore: boolean;
@@ -32,93 +31,134 @@ interface BundleItem {
 
 const calculateTotalScoreMultipleAddresses = (addressesData: any) => {
 	const totalScore = addressesData.reduce((acc: number, curr: any) => {
-		return acc + calculateTotalScore(curr.data);
+		const mergedScores = curr.data.merged_score_data || {
+			prime_score: 0,
+			community_score: 0,
+			initialization_score: 0
+		};
+		return acc + mergedScores.prime_score + mergedScores.community_score + mergedScores.initialization_score;
 	}, 0);
 	return totalScore;
 };
 
-const calculateTotalScore = (data: any) => {
-	const scores = data.scores || {
-		prime_score: 0,
-		community_score: 0,
-		initialization_score: 0,
-	};
-	const baseScores = data.base_scores || {
-		prime_score: 0,
-		community_score: 0,
-		initialization_score: 0,
-	};
-
-	return (
-		scores.prime_score +
-		baseScores.prime_score +
-		scores.community_score +
-		baseScores.community_score +
-		scores.initialization_score +
-		baseScores.initialization_score
-	);
-};
-
 const AddressListItem = React.memo(({ index, style, data }: any) => {
-	const { addresses, favorites, toggleFavorite } = data;
-	const item = addresses[index];
-	console.log(item.data.leaderboard_rank);
-	const ordinalIndicator = getOrdinalIndicator(item.data.leaderboard_rank);
-	const showOnlyAddress = item.name === item.address || item.name === `${item.address.slice(0, isMobile ? 4 : 8)}...${item.address.slice(isMobile ? -4 : -8)}`;
-	const isFavorite = favorites.includes(item.address.toLowerCase());
+	const { addresses, favorites, toggleFavorite, isLoadingMore, highlightedAddress } = data;
+	const isSkeletonItem = index >= addresses.length;
+	const skeletonIndex = index - addresses.length;
+
+	// Common container styles for both skeleton and data
+	const containerStyles = `p-4 border rounded-lg shadow-sm cursor-pointer transition-all duration-200 ease-in-out mx-2 ${isSkeletonItem
+		? 'border-judge-gray-700'
+		: highlightedAddress?.toLowerCase() === addresses[index].address.toLowerCase()
+			? 'highlight-pulse'
+			: 'border-judge-gray-700 group-hover:bg-black/30 group-hover:scale-[1.02]'
+		}`;
 
 	return (
-		<div style={style} className="px-4 py-2">
-			<Link href={`/address/${item.address}`} className={`p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center cursor-pointer transition-colors duration-200 ${data.highlightedIndex === index ? 'bg-[#0b0f0d]' : 'hover:bg-[#0b0f0d] hover:bg-opacity-40'}`}>
-				<div className="flex items-center space-x-4 flex-grow">
-					<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
-						<span className="text-lg font-bold text-white">{item.data.leaderboard_rank}<sup className="text-xs">{ordinalIndicator}</sup></span>
-					</div>
-					<div className="flex flex-col">
-						<div className="text-xl md:text-2xl text-judge-gray-200">{item.name}</div>
-						{!showOnlyAddress && (
-							<div className="text-sm text-judge-gray-400">
-								{item.address.slice(0, isMobile ? 4 : 8)}...{item.address.slice(isMobile ? -4 : -8)}
+		<motion.div
+			style={{
+				...style,
+				padding: '8px 0',
+				width: 'calc(100% - 16px)',
+				left: '8px'
+			}}
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{
+				duration: 0.2,
+				delay: isSkeletonItem ? skeletonIndex * 0.05 : 0,
+			}}
+		>
+			<Link
+				href={isSkeletonItem ? '#' : `/address/${addresses[index].address}`}
+				className="group relative block"
+				onClick={e => isSkeletonItem && e.preventDefault()}
+			>
+				<div className={containerStyles} data-address={isSkeletonItem ? '' : addresses[index].address}>
+					{isSkeletonItem ? (
+						// Skeleton content without motion wrapper
+						<div className="flex flex-row items-center">
+							<div className="flex items-center space-x-4 flex-grow">
+								<div className="flex-shrink-0 w-15 h-10 rounded-full bg-judge-gray-700/50 animate-pulse"></div>
+								<div className="flex flex-col space-y-2">
+									<div className="h-6 w-40 bg-judge-gray-700/50 rounded animate-pulse"></div>
+									<div className="h-4 w-32 bg-judge-gray-700/50 rounded animate-pulse"></div>
+								</div>
 							</div>
-						)}
-					</div>
-				</div>
-				<div className="flex flex-col items-end">
-					<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
-						{formatNumberWithCommas(calculateTotalScore(item.data))}{!isMobile && " CS"}
-					</div>
-					{item.prime_amount_cached && (
-						<div className="text-judge-gray-200 text-sm md:text-base">
-							{item.prime_amount_cached.toFixed(2).toLocaleString()} $PRIME
+							<div className="flex flex-col items-end space-y-2">
+								<div className="h-6 w-24 bg-judge-gray-700/50 rounded animate-pulse"></div>
+								<div className="h-4 w-20 bg-judge-gray-700/50 rounded animate-pulse"></div>
+							</div>
+							<div className="ml-4 w-6 h-6 bg-judge-gray-700/50 rounded animate-pulse"></div>
 						</div>
-					)}
-				</div>
-				<div
-					className="ml-4 cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
-					onClick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						toggleFavorite(item.address);
-					}}
-				>
-					{isFavorite ? (
-						<Star
-							fill="#facc15"
-							className="w-6 h-6 text-yellow-400 transition-all duration-300 ease-out scale-105 opacity-100"
-						/>
 					) : (
-						<Star
-							className="w-6 h-6 text-judge-gray-400 hover:text-yellow-400 transition-all duration-300 ease-out scale-100 opacity-100 hover:scale-110"
-						/>
+						// Actual content with fade in and slide up animation
+						<motion.div
+							className="flex flex-row items-center"
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.4,
+								ease: [0.2, 0.65, 0.3, 0.9]
+							}}
+							key={`content-${addresses[index].address}`}
+						>
+							<div className="flex items-center space-x-4 flex-grow">
+								<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
+									<span className="text-lg font-bold text-white">{addresses[index].data.leaderboard_rank}<sup className="text-xs">{getOrdinalIndicator(addresses[index].data.leaderboard_rank)}</sup></span>
+								</div>
+								<div className="flex flex-col">
+									<div className="text-xl md:text-2xl text-judge-gray-200">{truncateText(addresses[index].name, isMobile)}</div>
+									{!(addresses[index].name === addresses[index].address || addresses[index].name === `${addresses[index].address.slice(0, isMobile ? 4 : 8)}...${addresses[index].address.slice(isMobile ? -4 : -8)}`) && (
+										<div className="text-sm text-judge-gray-400">
+											{addresses[index].address.slice(0, isMobile ? 4 : 8)}...{addresses[index].address.slice(isMobile ? -4 : -8)}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="flex flex-col items-end">
+								<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
+									{formatNumberWithCommas(
+										(addresses[index].data.merged_score_data?.prime_score || 0) +
+										(addresses[index].data.merged_score_data?.community_score || 0) +
+										(addresses[index].data.merged_score_data?.initialization_score || 0)
+									)}{!isMobile && " CS"}
+								</div>
+								{addresses[index].prime_amount_cached && (
+									<div className="text-judge-gray-200 text-sm md:text-base">
+										{addresses[index].prime_amount_cached.toFixed(2).toLocaleString()} $PRIME
+									</div>
+								)}
+							</div>
+							<div
+								className="ml-4 cursor-pointer"
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									toggleFavorite(addresses[index].address);
+								}}
+							>
+								{favorites.includes(addresses[index].address.toLowerCase()) ? (
+									<Star
+										fill="#facc15"
+										className="w-6 h-6 text-yellow-400 group-hover:scale-110 transition-transform"
+									/>
+								) : (
+									<Star
+										className="w-6 h-6 text-judge-gray-400 group-hover:text-yellow-400 group-hover:scale-110 transition-transform"
+									/>
+								)}
+							</div>
+						</motion.div>
 					)}
 				</div>
 			</Link>
-		</div>
+		</motion.div>
 	);
 });
 AddressListItem.displayName = 'AddressListItem';
 
-const BundleListItem = React.memo(({ bundle, addresses }: { bundle: BundleItem; addresses: AddressItem[] }) => {
+const BundleListItem = React.memo(({ bundle, addresses, index }: { bundle: BundleItem; addresses: AddressItem[]; index: number }) => {
 	const bundleAddresses = bundle.addresses.map(addr => addresses.find(item => item.address.toLowerCase() === addr.toLowerCase()));
 
 	if (bundleAddresses.some(addr => !addr?.name)) {
@@ -127,18 +167,25 @@ const BundleListItem = React.memo(({ bundle, addresses }: { bundle: BundleItem; 
 
 	return (
 		<Link href={`/address/${bundle.addresses.join(',')}`} className="px-4 mb-4 w-full">
-			<SlideUp>
-				<div className="p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center">
-					<div className="ml-4 flex-grow">
-						<div className="text-xl text-judge-gray-400">
-							{bundleAddresses.map(addr => addr?.name).join(", ")}
-						</div>
-					</div>
-					<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
-						{formatNumberWithCommas(bundle.totalScore)}{!isMobile && " CS"}
+			<motion.div
+				className="p-4 border border-judge-gray-700 rounded-lg shadow-sm flex flex-row items-center"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{
+					duration: 0.4,
+					delay: index * 0.1, // This creates the stagger effect
+					ease: [0.4, 0, 0.2, 1]
+				}}
+			>
+				<div className="ml-4 flex-grow">
+					<div className="text-xl text-judge-gray-400">
+						{bundleAddresses.map(addr => addr?.name).join(", ")}
 					</div>
 				</div>
-			</SlideUp>
+				<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
+					{formatNumberWithCommas(bundle.totalScore)}{!isMobile && " CS"}
+				</div>
+			</motion.div>
 		</Link>
 	);
 });
@@ -148,24 +195,31 @@ BundleListItem.displayName = 'BundleListItem';
 const Leaderboard: React.FC<LeaderboardProps> = ({
 	addressesData,
 	addressToHighlight,
-	highlightKey,
 	showOnlyFavorites,
 	onLoadMore,
 	isLoadingMore
 }) => {
 	const [allAddresses, setAllAddresses] = useState<AddressItem[]>([]);
-	const [highlightedIndex, setHighlightedIndex] = useState(-1)
 	const [favorites, setFavorites] = useState<string[]>([]);
 	const [bundleFavorites, setBundleFavorites] = useState<string[][]>([]);
 	const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
 	const [ensCache, setEnsCache] = useState<Record<string, string>>({});
+	const [isNearBottom, setIsNearBottom] = useState(false);
+	const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
+	const [isInitialLoading, setIsInitialLoading] = useState(true);
+	const [isPreloading, setIsPreloading] = useState(false);
 
 	const listRef = useRef<List>(null);
 	const prevScrollOffset = useRef(0);
+	const loadingRef = useRef(false);
+	const preloadThresholdRef = useRef(0.7); // Start preloading at 70% scroll
+	const scrollThresholdRef = useRef(0);
+	const SCROLL_THRESHOLD = 300; // pixels to scroll before removing highlight
+	const BOTTOM_THRESHOLD = 0.85; // Show skeletons when 85% scrolled
 
 	const scrollToTop = () => {
 		if (listRef.current) {
-			listRef.current.scrollToItem(0) // second parameter here could be 'auto', 'smart', 'center', 'end', 'start'
+			listRef.current.scrollToItem(0)
 
 		}
 	};
@@ -181,34 +235,54 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	}, []);
 
 	const fetchENSNames = useCallback(async (addresses: any[]) => {
-		const newAddresses = addresses.map(item => ({
-			...item,
-			name: ensCache[item.address.toLowerCase()] || item.address
-		}));
-		setAllAddresses(newAddresses);
-
-		// Fetch ENS names for addresses not in cache
+		// First check which addresses need ENS resolution
 		const uncachedAddresses = addresses.filter(item => !ensCache[item.address.toLowerCase()]);
-		if (uncachedAddresses.length > 0) {
+
+		// If all addresses are cached, just update the names from cache
+		if (uncachedAddresses.length === 0) {
+			setAllAddresses(addresses.map(item => ({
+				...item,
+				name: ensCache[item.address.toLowerCase()] || item.address
+			})));
+			return;
+		}
+
+		// Fetch new ENS names
+		try {
 			const ensPromises = uncachedAddresses.map(async (item) => {
 				const ensName = await getENSNameFromAddress(item.address, true);
 				return { address: item.address.toLowerCase(), name: ensName || item.address };
 			});
 
 			const ensResults = await Promise.all(ensPromises);
-			const newCache = { ...ensCache };
-			ensResults.forEach(result => {
-				newCache[result.address] = result.name;
-			});
-			setEnsCache(newCache);
 
-			// Update addresses with new ENS names
-			setAllAddresses(prev => prev.map(item => ({
+			// Update cache in one go
+			setEnsCache(prevCache => {
+				const newCache = { ...prevCache };
+				ensResults.forEach(result => {
+					newCache[result.address] = result.name;
+				});
+				return newCache;
+			});
+
+			// Update addresses with all names (cached + new)
+			setAllAddresses(addresses.map(item => {
+				const lowercaseAddr = item.address.toLowerCase();
+				const ensResult = ensResults.find(r => r.address === lowercaseAddr);
+				return {
+					...item,
+					name: ensResult?.name || ensCache[lowercaseAddr] || item.address
+				};
+			}));
+		} catch (error) {
+			console.error('Error fetching ENS names:', error);
+			// On error, just use addresses as names
+			setAllAddresses(addresses.map(item => ({
 				...item,
-				name: newCache[item.address.toLowerCase()] || item.name
+				name: ensCache[item.address.toLowerCase()] || item.address
 			})));
 		}
-	}, [ensCache]);
+	}, []);
 
 	useEffect(() => {
 		const storedFavorites = localStorage.getItem('favoriteAddresses');
@@ -223,8 +297,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	}, []);
 
 	useEffect(() => {
-		fetchENSNames(addressesData);
-	}, [fetchENSNames, addressesData]);
+		if (addressesData.length > 0) {
+			fetchENSNames(addressesData).finally(() => {
+				setIsInitialLoading(false);
+			});
+		} else {
+			setIsInitialLoading(false);
+		}
+	}, [addressesData, fetchENSNames]);
 
 	useEffect(() => {
 		const calculateBundleScores = () => {
@@ -242,23 +322,26 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	}, [bundleFavorites, addressesData]);
 
 	useEffect(() => {
-		if (addressToHighlight) {
-			const highlightedIndex = allAddresses.findIndex(
-				item => item.address.toLowerCase() === addressToHighlight.toLowerCase() ||
-					item.name.toLowerCase() === addressToHighlight.toLowerCase()
+		if (addressToHighlight && listRef.current) {
+			const index = allAddresses.findIndex(
+				item => item.address.toLowerCase() === addressToHighlight.toLowerCase()
 			);
-
-			if (highlightedIndex !== -1) {
-				setHighlightedIndex(highlightedIndex);
-				if (listRef.current && 'scrollToItem' in listRef.current) {
-					(listRef.current as any).scrollToItem(highlightedIndex, "center");
-				}
-			} else {
-				toast.error("Address not found in the leaderboard");
+			if (index !== -1) {
+				// Add a small delay to ensure the list has rendered
+				setTimeout(() => {
+					// Scroll to the item and center it in the viewport
+					listRef.current?.scrollToItem(index, "center");
+				}, 100);
 			}
 		}
-	}, [addressToHighlight, allAddresses, highlightKey]);
+	}, [addressToHighlight, allAddresses]);
 
+	useEffect(() => {
+		if (addressToHighlight) {
+			setActiveHighlight(addressToHighlight);
+			scrollThresholdRef.current = 0;
+		}
+	}, [addressToHighlight]);
 
 	const filteredAddresses = useMemo(() => {
 		return showOnlyFavorites
@@ -276,73 +359,123 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 		return `${calculatedHeight}px`;
 	}, [showOnlyFavorites, filteredAddresses.length]);
 
-	// Add onScroll handler for infinite loading
+	// Modified handleScroll function
 	const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
 		if (scrollUpdateWasRequested) return;
 
 		const scrollingDown = scrollOffset > prevScrollOffset.current;
-		prevScrollOffset.current = scrollOffset;
+		const scrollDelta = Math.abs(scrollOffset - prevScrollOffset.current);
 
-		if (!showOnlyFavorites && scrollingDown) {
-			const listElement = (listRef.current as any)?._outerRef;
-			if (!listElement) return;
-
-			const scrolledToBottom =
-				Math.ceil(scrollOffset + listElement.clientHeight) >=
-				listElement.scrollHeight - 100; // 100px threshold
-
-			if (scrolledToBottom && !isLoadingMore) {
-				onLoadMore();
+		// Update scroll threshold tracking
+		if (activeHighlight) {
+			scrollThresholdRef.current += scrollDelta;
+			if (scrollThresholdRef.current > SCROLL_THRESHOLD) {
+				setActiveHighlight(null);
 			}
 		}
-	}, [showOnlyFavorites, isLoadingMore, onLoadMore]);
+
+		prevScrollOffset.current = scrollOffset;
+
+		if (!showOnlyFavorites && scrollingDown && listRef.current) {
+			const listElement = (listRef.current as any)._outerRef as HTMLDivElement;
+			if (!listElement) return;
+
+			const scrolledPercentage = (scrollOffset + listElement.clientHeight) / listElement.scrollHeight;
+			const nearBottom = scrolledPercentage > BOTTOM_THRESHOLD;
+			const shouldPreload = scrolledPercentage > preloadThresholdRef.current;
+
+			// Immediately show skeletons when near bottom
+			setIsNearBottom(nearBottom);
+
+			// Preload next items when reaching preload threshold
+			if (shouldPreload && !isLoadingMore && !loadingRef.current && !isPreloading) {
+				setIsPreloading(true);
+				loadingRef.current = true;
+				onLoadMore();
+				// Reset loading states after a delay
+				setTimeout(() => {
+					loadingRef.current = false;
+					setIsPreloading(false);
+				}, 500);
+			}
+
+			// Trigger load more when very close to bottom
+			if (nearBottom && !isLoadingMore && !loadingRef.current) {
+				loadingRef.current = true;
+				onLoadMore();
+				// Reset loading ref after a shorter delay
+				setTimeout(() => {
+					loadingRef.current = false;
+				}, 500);
+			}
+		}
+	}, [showOnlyFavorites, isLoadingMore, onLoadMore, activeHighlight, isPreloading]);
+
+	const totalItemCount = useMemo(() => {
+		const baseCount = filteredAddresses.length;
+		// Show skeleton items when near bottom OR when loading more
+		return (!showOnlyFavorites && (isNearBottom || isLoadingMore)) ? baseCount + 5 : baseCount;
+	}, [filteredAddresses.length, isLoadingMore, showOnlyFavorites, isNearBottom]);
+
+	if (isInitialLoading) {
+		return (
+			<div className="flex justify-center items-center h-[60vh]">
+				<Loader />
+			</div>
+		);
+	}
 
 	return (
-		<div className="max-w-4xl mx-auto">
+		<div className="max-w-4xl mx-auto relative px-4">
 			{showOnlyFavorites && filteredAddresses.length === 0 ? (
 				<div className="flex items-start justify-center h-full">
 					<p className="text-xl text-judge-gray-400">No favorites added yet</p>
 				</div>
 			) :
 				<div>
-					<div style={{ height: listHeight }}>
+					<div style={{ height: listHeight }} className="overflow-visible">
 						<AutoSizer>
 							{({ height, width }) => (
 								<List
 									ref={listRef}
 									height={height}
-									itemCount={filteredAddresses.length}
+									itemCount={totalItemCount}
 									itemSize={100}
 									width={width}
-									className="no-scrollbar"
+									className="no-scrollbar overflow-visible px-4"
 									onScroll={handleScroll}
-									overscanCount={5}
+									overscanCount={10}
 									itemData={{
 										addresses: filteredAddresses,
-										highlightedIndex,
 										favorites,
-										toggleFavorite
+										toggleFavorite,
+										isLoadingMore,
+										highlightedAddress: activeHighlight
 									}}
+									useIsScrolling
 								>
 									{AddressListItem}
 								</List>
 							)}
 						</AutoSizer>
-						{(!showOnlyFavorites && (
-							<div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+						<div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-4">
+							{!showOnlyFavorites && (
 								<motion.div
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 20 }}
-									transition={{ duration: 0.3 }}
+									initial={{ opacity: 0, scale: 0.8 }}
+									animate={{ opacity: 1, scale: 1 }}
+									exit={{ opacity: 0, scale: 0.8 }}
+									transition={{
+										duration: 0.5,
+										ease: [0.4, 0, 0.2, 1]
+									}}
 								>
 									<button
 										onClick={scrollToTop}
-										className="bg-judge-gray-800 text-judge-gray-200 px-4 py-2 rounded-full shadow-lg hover:bg-judge-gray-700 transition-colors duration-300"
+										className="bg-judge-gray-800 bg-opacity-80 px-4 py-2 rounded-full shadow-lg hover:bg-judge-gray-700 transition-all duration-300 ease-out hover:scale-105 backdrop-blur-sm flex items-center gap-2"
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
-											className="h-6 w-6 inline-block mr-2"
+											className="h-5 w-5"
 											fill="none"
 											viewBox="0 0 24 24"
 											stroke="currentColor"
@@ -354,11 +487,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 												d="M5 10l7-7m0 0l7 7m-7-7v18"
 											/>
 										</svg>
-										Scroll to Top
+										<span className="text-sm font-medium">Scroll to Top</span>
 									</button>
 								</motion.div>
-							</div>
-						))}
+							)}
+						</div>
 					</div>
 				</div>
 			}
@@ -367,7 +500,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 					<h2 className="text-2xl font-bold mb-4">Bundles</h2>
 					{bundleItems.length > 0 ? (
 						bundleItems.map((bundle, index) => (
-							<BundleListItem key={index} bundle={bundle} addresses={allAddresses} />
+							<BundleListItem
+								key={index}
+								bundle={bundle}
+								addresses={allAddresses}
+								index={index}
+							/>
 						))
 					) : (
 						<p className="text-xl text-judge-gray-400">No favorite bundles added yet</p>

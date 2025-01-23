@@ -5,23 +5,31 @@ import { getApiUrl } from "@/lib/utils";
 export async function GET(request: NextRequest) {
 	try {
 		const searchParams = request.nextUrl.searchParams;
-		const address = searchParams.get('address');
+		const query = searchParams.get('query');
 
-		if (!address) {
-			return NextResponse.json({ error: "Address parameter is required" }, { status: 400 });
+		if (!query) {
+			return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
 		}
 
 		// Get all addresses up to and including the searched address
-		const apiUrl = getApiUrl(`/search_position?address=${address}`);
+		const apiUrl = getApiUrl(`/search_position?query=${query}`);
 		const response = await axios.get(apiUrl);
 
-		// The response should include:
+		// The response now includes:
 		// - addresses: all addresses up to and including the searched one
 		// - position: position of the searched address
-		// - total_pages: total number of pages in the leaderboard
+		// - total_addresses: total number of addresses
+		// - queried_as: original query string
+		// - resolved_address: resolved Ethereum address
 		return NextResponse.json(response.data);
-	} catch (error) {
+	} catch (error: any) {
 		console.error("Error searching address:", error);
+		if (error.response?.status === 404) {
+			return NextResponse.json(
+				{ error: "Address not found in the leaderboard" },
+				{ status: 404 }
+			);
+		}
 		return NextResponse.json(
 			{ error: "An error occurred while searching" },
 			{ status: 500 }
