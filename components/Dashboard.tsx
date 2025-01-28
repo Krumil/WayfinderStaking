@@ -5,8 +5,6 @@ import CardStack from "@/components/CardStack";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import AnimatedTitle from "@/components/AnimatedTitle";
 import Loader from "@/components/Loader/Loader";
-import { Button } from "@/components/ui/button";
-import { Share2, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import {
 	promptSupply,
@@ -24,6 +22,72 @@ interface DashboardProps {
 	userData: UserData | null;
 	stakingRewards: number;
 	addressList: AddressData[];
+	totalUsers: number;
+}
+
+interface SecondaryAddressBadge {
+	address: string;
+	extra: {
+		inactive_referrals: number;
+	};
+	scores: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	base_scores: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	merged_score_data: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	prime_sunk: number;
+	prime_amount_cached: number;
+	prime_held_duration: number;
+	total_prime_multiplier: number;
+	secondary_addresses: string[];
+	longest_caching_time: number;
+}
+
+interface UserData {
+	avatar_count: number;
+	base_prime_amount_cached: number;
+	base_scores: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	echelon_governance_participation: number;
+	extra: {
+		inactive_referrals: number;
+		secondary_address_badges?: SecondaryAddressBadge[];
+		primary_address_badge_data?: SecondaryAddressBadge;
+	};
+	held_prime_before_unlock: boolean;
+	longest_caching_time: number;
+	participated_in_prime_unlock_vote: boolean;
+	percentage: number;
+	leaderboard_rank: number;
+	prime_amount_cached: number;
+	prime_held_duration: number;
+	prime_sunk: number;
+	secondary_addresses: string[];
+	scores: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	merged_score_data: {
+		prime_score: number;
+		community_score: number;
+		initialization_score: number;
+	};
+	total_users: number;
+	users_referred: number;
 }
 
 const Dashboard = ({
@@ -31,6 +95,7 @@ const Dashboard = ({
 	userData,
 	stakingRewards,
 	addressList,
+	totalUsers,
 }: DashboardProps) => {
 	const [fullyDiluitedValue, setFullyDiluitedValue] = useState<number>(1000);
 	const [primePrice, setPrimePrice] = useState<number>(0);
@@ -39,8 +104,43 @@ const Dashboard = ({
 	const [userEarnedPromptTokensInUSD, setUserEarnedPromptTokensInUSD] = useState<number>(0);
 	const [userPercentage, setUserPercentage] = useState<string>("0");
 	const [userPrimeCached, setUserPrimeCached] = useState<number>(0);
+	const [ensNames, setEnsNames] = useState<Record<string, string>>({});
 
 	const isMultipleAddresses = userAddresses.length > 1;
+
+	useEffect(() => {
+		const fetchEnsNames = async () => {
+			const promises = userAddresses.map(async (address) => {
+				try {
+					const response = await fetch('/api/data/ens', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ address }),
+					});
+
+					if (!response.ok) {
+						throw new Error('Failed to fetch ENS name');
+					}
+
+					const data = await response.json();
+					if (data.ens_name) {
+						setEnsNames(prev => ({
+							...prev,
+							[address.toLowerCase()]: data.ens_name
+						}));
+					}
+				} catch (error) {
+					console.error('Error fetching ENS name:', error);
+				}
+			});
+
+			await Promise.all(promises);
+		};
+
+		fetchEnsNames();
+	}, [userAddresses]);
 
 	useEffect(() => {
 		const getPrimeValue = async () => {
@@ -53,9 +153,8 @@ const Dashboard = ({
 
 	useEffect(() => {
 		if (!userData) return;
-
 		const tokens = (userData.percentage / 100) * stakingRewards;
-		setUserPrimeCached(userData.total_prime_cached / 1_000_000_000_000_000_000);
+		setUserPrimeCached(userData.prime_amount_cached / 1_000_000_000_000_000_000);
 		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
 
@@ -95,9 +194,18 @@ const Dashboard = ({
 		return isMultipleAddresses ? "Combined, they are" : "This address is";
 	};
 
+	const handleCopyAddress = (address: string) => {
+		navigator.clipboard.writeText(address).then(() => {
+			toast.success('Address copied to clipboard!');
+		}).catch((error) => {
+			console.error('Copy failed:', error);
+			toast.error('Failed to copy address. Please try again.');
+		});
+	};
+
 	const stackCards = [
 		{
-			title: <AnimatedTitle addressList={addressList} linkedAddresses={userData?.secondary_addresses || []} />,
+			title: <div onClick={() => handleCopyAddress(userAddresses[0])} className="cursor-pointer"><AnimatedTitle addressList={addressList} linkedAddresses={userData?.secondary_addresses || []} /></div>,
 			content: (
 				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start relative min-h-[200px]">
 					<div className="mb-4 md:my-5 w-full">
@@ -108,7 +216,7 @@ const Dashboard = ({
 							</span>{" "}
 							$PRIME, giving a {isMultipleAddresses ? "combined " : ""}Contribution Score of{" "}
 							<span className="md:text-3xl text-gradient-transparent">
-								<AnimatedNumber value={userData?.total_score || 0} />
+								<AnimatedNumber value={(userData?.merged_score_data?.prime_score || 0) + (userData?.merged_score_data?.community_score || 0) + (userData?.merged_score_data?.initialization_score || 0)} />
 							</span>{" "}
 						</div>
 					</div>
@@ -124,14 +232,14 @@ const Dashboard = ({
 						$PROMPT.
 					</p>
 					<div className="absolute -bottom-[20px] w-full flex justify-between items-end px-4 pb-2">
-						<div className="flex-1" /> {/* Spacer */}
+						<div className="flex-1" />
 						<div className="text-sm md:text-base bg-transparent text-gradient-transparent">
 							<div className="flex justify-end items-baseline text-3xl leading-none">
 								<div>{userData?.leaderboard_rank || 0}</div>
 								<sup className="text-lg text-gradient-transparent">
 									{getOrdinalSymbol(userData?.leaderboard_rank || 0)}
 								</sup>
-								<span className="text-lg flex items-baseline">/ {userData?.total_users || 0}</span>
+								<span className="text-lg flex items-baseline">/ {formatNumberWithCommas(totalUsers)}</span>
 							</div>
 						</div>
 						<div className="flex-1 flex justify-end">
@@ -143,12 +251,6 @@ const Dashboard = ({
 								}}
 								className="pointer-events-auto"
 							>
-								<Button
-									size="sm"
-									className="bg-gradient-to-r from-judge-gray-200 to-judge-gray-300 text-judge-gray-950 hover:from-judge-gray-300 hover:to-judge-gray-400 transition-all duration-300 flex items-center gap-2"
-								>
-									<Download className="w-4 h-4" />
-								</Button>
 							</div>
 						</div>
 					</div>
@@ -248,17 +350,58 @@ const Dashboard = ({
 				</div>
 			),
 		},
+		{
+			title: <div>Secondary Addresses</div>,
+			content: (
+				<div className="text-base">
+					{userData?.extra?.secondary_address_badges?.map((badge, index) => (
+						<div key={index} className="mb-4 last:mb-0 p-3 rounded-lg bg-judge-gray-800/20">
+							<div className="text-lg font-semibold mb-2 text-gradient-transparent">
+								{ensNames[badge.address?.toLowerCase()] ||
+									`${badge.address?.slice(0, 6)}...${badge.address?.slice(-4)}`}
+							</div>
+							<div className="grid grid-cols-2 gap-2">
+								<div className="flex flex-row items-center justify-between">
+									<span className="text-sm text-judge-gray-400">Total Score:</span>
+									<span>
+										<AnimatedNumber value={(badge.merged_score_data?.prime_score || 0) + (badge.merged_score_data?.community_score || 0) + (badge.merged_score_data?.initialization_score || 0)} />
+									</span>
+								</div>
+								<div className="flex flex-row items-center justify-between">
+									<span className="text-sm text-judge-gray-400">Prime:</span>
+									<span>
+										<AnimatedNumber value={badge.prime_amount_cached / 1_000_000_000_000_000_000 || 0} />
+									</span>
+								</div>
+								<div className="flex flex-row items-center justify-between">
+									<span className="text-sm text-judge-gray-400">Duration:</span>
+									<span>
+										<AnimatedNumber value={badge.prime_held_duration / 86400 || 0} />d
+									</span>
+								</div>
+								<div className="flex flex-row items-center justify-between">
+									<span className="text-sm text-judge-gray-400">Multiplier:</span>
+									<span>
+										<AnimatedNumber value={badge.total_prime_multiplier || 0} />x
+									</span>
+								</div>
+							</div>
+						</div>
+					))}
+					{(!userData?.extra?.secondary_address_badges || userData.extra.secondary_address_badges.length === 0) && (
+						<div className="text-center text-judge-gray-400">No secondary addresses found</div>
+					)}
+				</div>
+			),
+		},
 	];
-
 
 	const handleImageDownload = async () => {
 		try {
-			// Get the card image URL for the current address with cache busting
 			const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wayfinder-staking.vercel.app';
 			const timestamp = Date.now();
 			const cardImageUrl = `${baseUrl}/api/card-image/${userAddresses[0]}?t=${timestamp}`;
 
-			// Fetch the image
 			const response = await fetch(cardImageUrl, {
 				headers: {
 					'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -272,25 +415,16 @@ const Dashboard = ({
 			}
 
 			const blob = await response.blob();
-
-			// Create a download link
 			const downloadUrl = window.URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = downloadUrl;
-
-			// Get ENS name or truncated address for filename
 			const addressDisplay = addressList.find(a => a.address.toLowerCase() === userAddresses[0].toLowerCase())?.ensName ||
 				userAddresses[0].slice(0, 6);
 			link.download = `wayfinder-staking-${addressDisplay}.png`;
-
-			// Trigger download
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
-
-			// Clean up
 			window.URL.revokeObjectURL(downloadUrl);
-
 			toast.success('Image downloaded successfully!');
 		} catch (error) {
 			console.error('Download error:', error);

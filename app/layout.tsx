@@ -4,6 +4,7 @@ import "./globals.css";
 import dynamic from "next/dynamic";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
+import { Toaster } from "@/components/ui/toaster";
 // import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
 
 const inter = Oxanium({
@@ -54,6 +55,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" data-theme="dark">
+			<head />
 			<body
 				className={`${inter.className} bg-cover bg-center text-white h-screen flex flex-col justify-center items-center overflow-hidden`}
 				style={{ backgroundImage: `url(/assets/bg.png)` }}
@@ -67,6 +69,7 @@ export default function RootLayout({
 				</div>
 				{/* <BuyMeACoffeeButton /> */}
 				<DisclaimerDialog />
+				<Toaster />
 			</body>
 		</html>
 	);

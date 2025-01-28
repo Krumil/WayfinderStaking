@@ -57,8 +57,6 @@ interface UserData {
 	percentage: number;
 	avatar_count: number;
 	leaderboard_rank: number;
-	total_prime_cached: number;
-	total_score: number;
 	total_users: number;
 }
 

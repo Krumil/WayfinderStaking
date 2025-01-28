@@ -94,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 
 	const handleBackClick = () => {
 		if (pathname !== "/") {
-			router.push("/");
+			window.history.back();
 		}
 	};
 

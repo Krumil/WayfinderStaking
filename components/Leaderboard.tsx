@@ -2,12 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { FixedSizeList as List, ListOnScrollProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
 import { Star } from "lucide-react";
 import { formatNumberWithCommas, getOrdinalIndicator, isMobile, truncateText } from "@/lib/utils";
 import { getENSNameFromAddress } from "@/lib/contract";
 import { motion, useAnimation } from "framer-motion";
-import Loader from "@/components/ui/loader";
+import Loader from "@/components/Loader/Loader";
 
 interface LeaderboardProps {
 	addressesData: any[];
@@ -47,7 +46,7 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 	const skeletonIndex = index - addresses.length;
 
 	// Common container styles for both skeleton and data
-	const containerStyles = `p-4 border rounded-lg shadow-sm cursor-pointer transition-all duration-200 ease-in-out mx-2 ${isSkeletonItem
+	const containerStyles = `p-4 border rounded-lg shadow-sm cursor-pointer transition-all duration-200 ease-in-out ${isSkeletonItem
 		? 'border-judge-gray-700'
 		: highlightedAddress?.toLowerCase() === addresses[index].address.toLowerCase()
 			? 'highlight-pulse'
@@ -109,7 +108,7 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 								</div>
 								<div className="flex flex-col">
 									<div className="text-xl md:text-2xl text-judge-gray-200">{truncateText(addresses[index].name, isMobile)}</div>
-									{!(addresses[index].name === addresses[index].address || addresses[index].name === `${addresses[index].address.slice(0, isMobile ? 4 : 8)}...${addresses[index].address.slice(isMobile ? -4 : -8)}`) && (
+									{!(addresses[index].name.toLowerCase() === addresses[index].address.toLowerCase() || addresses[index].name.toLowerCase() === `${addresses[index].address.slice(0, isMobile ? 4 : 8)}...${addresses[index].address.slice(isMobile ? -4 : -8)}`.toLowerCase()) && (
 										<div className="text-sm text-judge-gray-400">
 											{addresses[index].address.slice(0, isMobile ? 4 : 8)}...{addresses[index].address.slice(isMobile ? -4 : -8)}
 										</div>
@@ -207,15 +206,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	const [isNearBottom, setIsNearBottom] = useState(false);
 	const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
 	const [isInitialLoading, setIsInitialLoading] = useState(true);
-	const [isPreloading, setIsPreloading] = useState(false);
 
 	const listRef = useRef<List>(null);
 	const prevScrollOffset = useRef(0);
 	const loadingRef = useRef(false);
-	const preloadThresholdRef = useRef(0.7); // Start preloading at 70% scroll
 	const scrollThresholdRef = useRef(0);
 	const SCROLL_THRESHOLD = 300; // pixels to scroll before removing highlight
-	const BOTTOM_THRESHOLD = 0.85; // Show skeletons when 85% scrolled
 
 	const scrollToTop = () => {
 		if (listRef.current) {
@@ -352,7 +348,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
 	const listHeight = useMemo(() => {
 		if (!showOnlyFavorites) {
-			return '60vh'; // Fixed height when showing all addresses
+			return 'calc(60vh - 40px)'; // Show partial item by subtracting 40px from height
 		}
 		const itemHeight = 100; // Height of each item in pixels
 		const calculatedHeight = Math.min(filteredAddresses.length * itemHeight, window.innerHeight * 0.6);
@@ -381,59 +377,43 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 			if (!listElement) return;
 
 			const scrolledPercentage = (scrollOffset + listElement.clientHeight) / listElement.scrollHeight;
-			const nearBottom = scrolledPercentage > BOTTOM_THRESHOLD;
-			const shouldPreload = scrolledPercentage > preloadThresholdRef.current;
+			const nearBottom = scrolledPercentage > 0.8;
 
-			// Immediately show skeletons when near bottom
 			setIsNearBottom(nearBottom);
 
-			// Preload next items when reaching preload threshold
-			if (shouldPreload && !isLoadingMore && !loadingRef.current && !isPreloading) {
-				setIsPreloading(true);
-				loadingRef.current = true;
-				onLoadMore();
-				// Reset loading states after a delay
-				setTimeout(() => {
-					loadingRef.current = false;
-					setIsPreloading(false);
-				}, 500);
-			}
-
-			// Trigger load more when very close to bottom
 			if (nearBottom && !isLoadingMore && !loadingRef.current) {
 				loadingRef.current = true;
 				onLoadMore();
-				// Reset loading ref after a shorter delay
 				setTimeout(() => {
 					loadingRef.current = false;
-				}, 500);
+				}, 1000);
 			}
 		}
-	}, [showOnlyFavorites, isLoadingMore, onLoadMore, activeHighlight, isPreloading]);
+	}, [showOnlyFavorites, isLoadingMore, onLoadMore, activeHighlight]);
 
 	const totalItemCount = useMemo(() => {
 		const baseCount = filteredAddresses.length;
 		// Show skeleton items when near bottom OR when loading more
-		return (!showOnlyFavorites && (isNearBottom || isLoadingMore)) ? baseCount + 5 : baseCount;
+		return (isNearBottom || isLoadingMore) && !showOnlyFavorites ? baseCount + 10 : baseCount;
 	}, [filteredAddresses.length, isLoadingMore, showOnlyFavorites, isNearBottom]);
 
 	if (isInitialLoading) {
 		return (
-			<div className="flex justify-center items-center h-[60vh]">
+			<div className="flex justify-center items-center min-h-[60vh]">
 				<Loader />
 			</div>
 		);
 	}
 
 	return (
-		<div className="max-w-4xl mx-auto relative px-4">
+		<div className="w-full max-w-4xl mx-auto relative px-2">
 			{showOnlyFavorites && filteredAddresses.length === 0 ? (
 				<div className="flex items-start justify-center h-full">
 					<p className="text-xl text-judge-gray-400">No favorites added yet</p>
 				</div>
 			) :
 				<div>
-					<div style={{ height: listHeight }} className="overflow-visible">
+					<div style={{ height: listHeight }} className="overflow-visible relative">
 						<AutoSizer>
 							{({ height, width }) => (
 								<List
@@ -442,7 +422,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 									itemCount={totalItemCount}
 									itemSize={100}
 									width={width}
-									className="no-scrollbar overflow-visible px-4"
+									className="no-scrollbar overflow-visible px-0"
 									onScroll={handleScroll}
 									overscanCount={10}
 									itemData={{
@@ -458,6 +438,32 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 								</List>
 							)}
 						</AutoSizer>
+						{!showOnlyFavorites && !isNearBottom && (
+							<motion.div
+								className="absolute bottom-4 left-1/2 -translate-x-1/2 text-judge-gray-400/50 pointer-events-none"
+								animate={{ y: [0, 4, 0] }}
+								transition={{
+									duration: 2,
+									repeat: Infinity,
+									ease: "easeInOut"
+								}}
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="h-6 w-6"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={1.5}
+										d="M19 14l-7 7m0 0l-7-7m7 7V3"
+									/>
+								</svg>
+							</motion.div>
+						)}
 						<div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-4">
 							{!showOnlyFavorites && (
 								<motion.div

@@ -5,7 +5,7 @@ import Leaderboard from "@/components/Leaderboard";
 import AddressSearch from "@/components/AddressSearch";
 import SlideUp from "@/components/ui/SlideUp";
 import FadeIn from "@/components/ui/FadeIn";
-import Loader from "@/components/ui/loader";
+import Loader from "@/components/Loader/Loader";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Star } from "lucide-react";
 import { fetchPrimeValue } from "@/lib/utils";
@@ -13,7 +13,6 @@ import { getPrimeBalance, getENSNameFromAddress, getAddressFromENS } from "@/lib
 import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 
 const DEFAULT_PRIME_SUPPLY = 1111111111;
@@ -217,36 +216,52 @@ const Home = () => {
 
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
-			<div className="text-2xl md:text-3xl mt-[10vh] md:mt-[20vh] text-judge-gray-200">
+			<div className="flex flex-col items-center text-2xl md:text-3xl mt-[10vh] md:mt-[15vh] text-judge-gray-200">
 				<SlideUp delay={0.4}>
-					<p className="flex flex-col justify-center items-center md:flex-row ">
-						There are currently{" "}
-						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
-							<AnimatedNumber value={primeBalance} />
-						</span>{" "}
-						$PRIME staked
-						<span className="text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold ">
-							(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
-						</span>{" "}
-					</p>
+					<div className="flex flex-col items-center justify-center text-center w-full">
+						<SlideUp delay={0.5}>
+							<div className="text-center">There are currently</div>
+						</SlideUp>{" "}
+						<SlideUp delay={0.7}>
+							<div className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent text-center">
+								<AnimatedNumber value={primeBalance} />
+							</div>
+						</SlideUp>{" "}
+						<SlideUp delay={0.9}>
+							<div className="text-center">$PRIME staked</div>
+						</SlideUp>
+						<SlideUp delay={1.0}>
+							<div className="text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold text-center">
+								(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
+							</div>
+						</SlideUp>
+					</div>
 				</SlideUp>
-				<SlideUp delay={0.8}>
-					<p className="flex flex-col justify-center items-center md:flex-row mt-6 mb-8">
-						This is about
-						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
-							<AnimatedNumber value={totalPercentageStaked} precision={2} />%
-						</span>{" "}
-						of the total circulating supply
-					</p>
+				<SlideUp delay={1.1}>
+					<div className="flex flex-col items-center justify-center text-center w-full mt-6 mb-8">
+						<SlideUp delay={1.2}>
+							<div className="text-center">This is about</div>
+						</SlideUp>
+						<SlideUp delay={1.3}>
+							<div className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent text-center">
+								<AnimatedNumber value={totalPercentageStaked} precision={2} />%
+							</div>
+						</SlideUp>
+						<SlideUp delay={1.4}>
+							<div className="text-center">of the total circulating supply</div>
+						</SlideUp>
+					</div>
 				</SlideUp>
-				<SlideUp delay={1.2}>
-					<AddressSearch
-						onAddressDetails={handleAddressDetails}
-						onSearchPosition={handleSearchPosition}
-					/>
+				<SlideUp delay={1.5}>
+					<div className="w-full flex justify-center">
+						<AddressSearch
+							onAddressDetails={handleAddressDetails}
+							onSearchPosition={handleSearchPosition}
+						/>
+					</div>
 				</SlideUp>
 				<SlideUp delay={1.6}>
-					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2">
+					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2 w-full">
 						<h2 className="text-2xl font-bold text-judge-gray-200">Leaderboard</h2>
 						<Star
 							className={`w-5 h-5 cursor-pointer transition-all duration-300 ease-in-out ${showOnlyFavorites
@@ -259,7 +274,7 @@ const Home = () => {
 				</SlideUp>
 			</div>
 			{loading && (
-				<FadeIn delay={1.8}>
+				<FadeIn delay={1.5}>
 					<div className="relative flex flex-col justify-center items-center text-md font-bold text-center mt-4 h-[200px]">
 						<Loader />
 					</div>

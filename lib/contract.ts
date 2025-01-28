@@ -79,46 +79,72 @@ async function fetchENSList() {
 }
 
 async function getENSNameFromAddress(address: string, truncated = false) {
-	if (!provider) {
-		await initializeContract();
-	}
+	try {
+		const response = await fetch('/api/data/ens', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ address }),
+		});
 
-	const cachedENS = ensCache[address.toLowerCase()];
-	if (cachedENS) {
-		return cachedENS.length > 20 ? `${cachedENS.slice(0, isMobile ? 4 : 8)}...${cachedENS.slice(isMobile ? -4 : -8)}` : cachedENS;
-	}
+		if (!response.ok) {
+			throw new Error('Failed to fetch ENS name');
+		}
 
-	const ens = await provider.lookupAddress(address);
-	if (ens) {
-		ensCache[address.toLowerCase()] = ens;
-		return ens.length > 20 ? `${ens.slice(0, isMobile ? 4 : 8)}...${ens.slice(isMobile ? -4 : -8)}` : ens;
-	} else if (truncated) {
-		const letters = isMobile ? 4 : 8;
-		return `${address.slice(0, letters)}...${address.slice(-letters)}`;
-	} else {
+		const data = await response.json();
+		const ensName = data.ens_name;
+
+		if (ensName) {
+			if (truncated && ensName.length > 20) {
+				return `${ensName.slice(0, isMobile ? 4 : 8)}...${ensName.slice(isMobile ? -4 : -8)}`;
+			}
+			return ensName;
+		} else if (truncated) {
+			const letters = isMobile ? 4 : 8;
+			return `${address.slice(0, letters)}...${address.slice(-letters)}`;
+		} else {
+			return address;
+		}
+	} catch (error) {
+		console.error('Error fetching ENS name:', error);
+		if (truncated) {
+			const letters = isMobile ? 4 : 8;
+			return `${address.slice(0, letters)}...${address.slice(-letters)}`;
+		}
 		return address;
 	}
 }
 
 async function getAddressFromENS(ensName: string, truncated = false) {
-	if (!provider) {
-		await initializeContract();
-	}
+	try {
+		const response = await fetch('/api/data/ens', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ ens: ensName }),
+		});
 
-	const resolver = await provider.getResolver(ensName);
-	if (!resolver) {
+		if (!response.ok) {
+			throw new Error('Failed to fetch address');
+		}
+
+		const data = await response.json();
+		const address = data.address;
+
+		if (!address) {
+			return null;
+		}
+
+		if (truncated) {
+			return `${address.slice(0, 4)}...${address.slice(-4)}`;
+		} else {
+			return address;
+		}
+	} catch (error) {
+		console.error('Error fetching address:', error);
 		return null;
-	}
-	const address = await resolver.getAddress();
-
-	if (!address) {
-		return null;
-	}
-
-	if (truncated) {
-		return `${address.slice(0, 4)}...${address.slice(-4)}`;
-	} else {
-		return address;
 	}
 }
 

@@ -33,8 +33,6 @@ export interface AddressData {
 			community_score: number;
 			initialization_score: number;
 		};
-		total_prime_cached: number;
-		total_score: number;
 		total_users: number;
 		users_referred: number;
 	};

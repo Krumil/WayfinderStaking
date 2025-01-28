@@ -14,8 +14,7 @@ interface Address {
 }
 
 interface ApiResponse {
-	total_score: number;
-	total_prime_cached: number;
+	prime_amount_cached: number;
 	position: number;
 	total_users: number;
 	addresses_processed: number;
@@ -30,9 +29,10 @@ interface AddressInfo {
 
 const AddressPage = () => {
 	const params = useParams<{ address: string }>();
-	const [addresses, setAddresses] = useState<Address[]>([]);
-	const [fetchedAddresses, setFetchedAddresses] = useState<boolean>(false);
-	const [combinedUserData, setCombinedUserData] = useState<UserData | null>(null);
+	const [address, setAddress] = useState<Address | null>(null);
+	const [fetchedAddress, setFetchedAddress] = useState<boolean>(false);
+	const [userData, setUserData] = useState<UserData | null>(null);
+	const [totalUsers, setTotalUsers] = useState<number>(0);
 	const { allAddressesData } = useAddressesStore();
 
 	useEffect(() => {
@@ -40,148 +40,92 @@ const AddressPage = () => {
 	}, []);
 
 	useEffect(() => {
-		const fetchAddresses = async () => {
-			const addressParams = decodeURIComponent(params.address)?.toLowerCase().split(',').map(a => a.trim());
-			const fetchedAddresses: Address[] = [];
-
-			for (const addressParam of addressParams) {
-				if (addressParam.includes(".eth")) {
-					const hexAddress = await getAddressFromENS(addressParam);
-					if (hexAddress) {
-						fetchedAddresses.push({
-							address: hexAddress.toLowerCase(),
-							ensName: addressParam.toLowerCase(),
-						});
-					}
-				} else {
-					const ensName = await getENSNameFromAddress(addressParam);
-
-					fetchedAddresses.push({
-						address: addressParam.toLowerCase(),
-						ensName: ensName.toLowerCase() === addressParam.toLowerCase() ? null : ensName.toLowerCase(),
-					});
-				}
+		const fetchGlobalData = async () => {
+			try {
+				const response = await fetch("/api/data/global");
+				if (!response.ok) throw new Error('Failed to fetch global data');
+				const data = await response.json();
+				setTotalUsers(data.total_addresses);
+			} catch (error) {
+				console.error('Error fetching global data:', error);
 			}
-
-			setAddresses(fetchedAddresses);
-			setFetchedAddresses(true);
 		};
 
-		fetchAddresses();
+		fetchGlobalData();
+	}, []);
+
+	useEffect(() => {
+		const fetchAddress = async () => {
+			const addressParam = decodeURIComponent(params.address)?.toLowerCase().trim();
+
+			if (addressParam.includes(".eth")) {
+				const hexAddress = await getAddressFromENS(addressParam);
+				if (hexAddress) {
+					setAddress({
+						address: hexAddress.toLowerCase(),
+						ensName: addressParam.toLowerCase(),
+					});
+				}
+			} else {
+				const ensName = await getENSNameFromAddress(addressParam);
+				setAddress({
+					address: addressParam.toLowerCase(),
+					ensName: ensName.toLowerCase() === addressParam.toLowerCase() ? null : ensName.toLowerCase(),
+				});
+			}
+			setFetchedAddress(true);
+		};
+
+		fetchAddress();
 	}, [params.address]);
 
 	useEffect(() => {
-		if (addresses.length === 0) return;
+		if (!address) return;
 
 		const fetchUserData = async () => {
-			// Check if data exists in the store
-			if (allAddressesData.length > 0) {
-				const relevantData = allAddressesData.filter((item: { address: string; }) =>
-					addresses.some(addr => addr.address.toLowerCase() === item.address.toLowerCase())
-				);
+			// Check cache first
+			const cachedData = allAddressesData.find(item =>
+				item.address.toLowerCase() === address.address.toLowerCase()
+			);
 
-				if (relevantData.length === addresses.length) {
-					// All required data is in the store, use it
-					processCombinedData(relevantData, allAddressesData.length - addresses.length + 1);
-					return;
+			if (cachedData) {
+				setUserData(cachedData.data);
+				return;
+			}
+
+			try {
+				const response = await fetch("/api/data/addresses", {
+					method: "POST",
+					body: JSON.stringify({ addresses: [address.address] }),
+					headers: { "Content-Type": "application/json" },
+				});
+
+				if (!response.ok) throw new Error('Failed to fetch address data');
+
+				const data: ApiResponse = await response.json();
+				if (data.addresses_found.length > 0) {
+					setUserData(data.addresses_found[0].data);
 				}
+			} catch (error) {
+				console.error('Error fetching user data:', error);
 			}
-
-			// If data is not in the store or incomplete, fetch it
-			const response = await fetch("/api/data/addresses", {
-				method: "POST",
-				body: JSON.stringify({ addresses: addresses.map(a => a.address) }),
-				headers: { "Content-Type": "application/json" },
-			});
-			const data: ApiResponse = await response.json();
-			processCombinedData(data.addresses_found, data.total_users, data.position);
-		};
-
-		const processCombinedData = (addressInfos: AddressInfo[], totalUsers: number, position?: number) => {
-			const combinedData: UserData = {
-				avatar_count: 0,
-				base_prime_amount_cached: 0,
-				base_scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
-				echelon_governance_participation: 0,
-				extra: { inactive_referrals: 0 },
-				held_prime_before_unlock: false,
-				longest_caching_time: 0,
-				participated_in_prime_unlock_vote: false,
-				percentage: 0,
-				leaderboard_rank: position || 0,
-				prime_amount_cached: 0,
-				prime_held_duration: 0,
-				prime_sunk: 0,
-				secondary_addresses: [],
-				scores: { prime_score: 0, community_score: 0, initialization_score: 0 },
-				merged_score_data: { prime_score: 0, community_score: 0, initialization_score: 0 },
-				total_prime_cached: 0,
-				total_score: 0,
-				total_users: totalUsers,
-				users_referred: 0
-			};
-
-			for (const addressInfo of addressInfos) {
-				const userData = addressInfo.data;
-				// Sum all numeric fields
-				combinedData.avatar_count += userData.avatar_count || 0;
-				combinedData.base_prime_amount_cached += userData.base_prime_amount_cached || 0;
-				combinedData.base_scores.community_score += userData.base_scores?.community_score || 0;
-				combinedData.base_scores.initialization_score += userData.base_scores?.initialization_score || 0;
-				combinedData.base_scores.prime_score += userData.base_scores?.prime_score || 0;
-				combinedData.echelon_governance_participation += userData.echelon_governance_participation || 0;
-				combinedData.extra.inactive_referrals += userData.extra?.inactive_referrals || 0;
-				combinedData.longest_caching_time = Math.max(combinedData.longest_caching_time, userData.longest_caching_time || 0);
-				combinedData.percentage += userData.percentage || 0;
-				combinedData.prime_amount_cached += userData.prime_amount_cached || 0;
-				combinedData.prime_held_duration += userData.prime_held_duration || 0;
-				combinedData.prime_sunk += userData.prime_sunk || 0;
-				combinedData.scores.community_score += userData.scores?.community_score || 0;
-				combinedData.scores.initialization_score += userData.scores?.initialization_score || 0;
-				combinedData.scores.prime_score += userData.scores?.prime_score || 0;
-				combinedData.merged_score_data.community_score += userData.merged_score_data?.community_score || 0;
-				combinedData.merged_score_data.initialization_score += userData.merged_score_data?.initialization_score || 0;
-				combinedData.merged_score_data.prime_score += userData.merged_score_data?.prime_score || 0;
-				combinedData.total_prime_cached += (userData.prime_amount_cached || 0) + (userData.base_prime_amount_cached || 0);
-				combinedData.total_score = (
-					combinedData.merged_score_data.prime_score +
-					combinedData.merged_score_data.community_score +
-					combinedData.merged_score_data.initialization_score
-				);
-				combinedData.users_referred += userData.users_referred || 0;
-
-				// Handle boolean fields with OR operation
-				combinedData.held_prime_before_unlock = combinedData.held_prime_before_unlock || userData.held_prime_before_unlock || false;
-				combinedData.participated_in_prime_unlock_vote = combinedData.participated_in_prime_unlock_vote || userData.participated_in_prime_unlock_vote || false;
-
-				combinedData.secondary_addresses.push(...(userData.secondary_addresses || []));
-			}
-
-			if (allAddressesData.length > 0) {
-				// Find the highest leaderboard rank (lowest number) among all addresses
-				combinedData.leaderboard_rank = Math.min(
-					...addressInfos.map(info => info.data.leaderboard_rank || Number.MAX_SAFE_INTEGER)
-				);
-			}
-
-			setCombinedUserData(combinedData);
 		};
 
 		fetchUserData();
-	}, [addresses, allAddressesData]);
-
+	}, [address, allAddressesData]);
 
 	return (
 		<div>
-			{fetchedAddresses &&
+			{fetchedAddress &&
 				stakingRewards !== 0 &&
-				combinedUserData ? (
+				userData ? (
 				<div className="flex flex-col h-screen">
 					<Dashboard
-						userAddresses={addresses.map(a => a.address)}
-						userData={combinedUserData}
+						userAddresses={[address!.address]}
+						userData={userData}
 						stakingRewards={stakingRewards}
-						addressList={addresses}
+						addressList={[address!]}
+						totalUsers={totalUsers}
 					/>
 				</div>
 			) : (

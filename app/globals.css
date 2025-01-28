@@ -184,30 +184,3 @@ body {
     width: 12px;
   }
 }
-
-@keyframes pulse-glow {
-  0% {
-    box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
-    filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.1));
-  }
-  50% {
-    box-shadow: 0 0 35px rgba(212, 175, 55, 0.3);
-    filter: drop-shadow(0 0 25px rgba(212, 175, 55, 0.2));
-  }
-  100% {
-    box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
-    filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.1));
-  }
-}
-
-.highlight-pulse {
-  animation: pulse-glow 2s ease-in-out infinite;
-  border-radius: 0.5rem;
-  border: 2px solid rgba(212, 175, 55, 0.6);
-  transform: scale(1.02);
-  background: radial-gradient(
-    circle at center,
-    rgba(212, 175, 55, 0.05) 0%,
-    transparent 70%
-  );
-}

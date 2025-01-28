@@ -57,7 +57,25 @@ export async function GET(
 			throw new Error('No data found for address');
 		}
 
-		const totalUsers = data.total_users;
+		// Get total users from global data
+		const globalResponse = await fetch(
+			`${process.env.NEXT_PUBLIC_API_URL || 'https://wayfinder-staking.vercel.app'}/api/data/global`,
+			{
+				headers: {
+					'Cache-Control': 'no-cache, no-store, must-revalidate',
+					'Pragma': 'no-cache',
+					'Expires': '0'
+				}
+			}
+		);
+
+		if (!globalResponse.ok) {
+			throw new Error('Failed to fetch global data');
+		}
+
+		const globalData = await globalResponse.json();
+		const totalUsers = globalData.total_addresses;
+
 		const userPrimeCached = (Number(userData.base_prime_amount_cached || 0) + Number(userData.prime_amount_cached || 0)) / 1e18;
 		const percentage = Number(userData.percentage || 0).toPrecision(2);
 		const stakingRewards = 1000000;

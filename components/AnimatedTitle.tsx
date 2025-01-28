@@ -78,7 +78,6 @@ const AnimatedTitle: React.FC<AnimatedTitleProps> = ({ addressList, linkedAddres
 		const allAddressesWithLinked = Array.from(new Set([...allAddresses, ...linkedAddresses.filter(addr => !allAddresses.includes(addr.toLowerCase()))]));
 		const addressesParam = allAddressesWithLinked.join(',');
 		const showLink = linkedAddresses.length > 0 && JSON.stringify(allAddresses) !== JSON.stringify(allAddressesWithLinked);
-		console.log(allAddresses, allAddressesWithLinked, showLink);
 
 		return (
 			<div className="flex flex-wrap">
