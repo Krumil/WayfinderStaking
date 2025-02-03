@@ -11,16 +11,8 @@ export async function GET(request: NextRequest) {
 			return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
 		}
 
-		// Get all addresses up to and including the searched address
 		const apiUrl = getApiUrl(`/search_position?query=${query}`);
 		const response = await axios.get(apiUrl);
-
-		// The response now includes:
-		// - addresses: all addresses up to and including the searched one
-		// - position: position of the searched address
-		// - total_addresses: total number of addresses
-		// - queried_as: original query string
-		// - resolved_address: resolved Ethereum address
 		return NextResponse.json(response.data);
 	} catch (error: any) {
 		console.error("Error searching address:", error);

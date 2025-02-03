@@ -22,6 +22,13 @@ let primeContractBase: ethers.Contract;
 
 let ensCache: Record<string, string> = {};
 
+const getBaseUrl = () => {
+	if (process.env.NODE_ENV === 'development') {
+		return 'http://localhost:3000';
+	}
+	return process.env.NEXT_PUBLIC_API_URL || 'https://wayfinder-staking.vercel.app';
+};
+
 async function initializeContract() {
 	provider = new ethers.JsonRpcProvider(providerUrl);
 	providerBase = new ethers.JsonRpcProvider(providerUrlBase);
@@ -67,20 +74,10 @@ async function getPrimeBalance() {
 	return ethers.formatEther(balance + balanceBase);
 }
 
-async function fetchENSList() {
-	try {
-		if (Object.keys(ensCache).length === 0) {
-			const response = await axios.get('/api/data/ens');
-			ensCache = response.data;
-		}
-	} catch (error) {
-		console.error("Error fetching ENS list:", error);
-	}
-}
-
 async function getENSNameFromAddress(address: string, truncated = false) {
 	try {
-		const response = await fetch('/api/data/ens', {
+		const baseUrl = getBaseUrl();
+		const response = await fetch(`${baseUrl}/api/data/ens`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -118,7 +115,8 @@ async function getENSNameFromAddress(address: string, truncated = false) {
 
 async function getAddressFromENS(ensName: string, truncated = false) {
 	try {
-		const response = await fetch('/api/data/ens', {
+		const baseUrl = getBaseUrl();
+		const response = await fetch(`${baseUrl}/api/data/ens`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -262,5 +260,4 @@ export {
 	getENSNameFromAddress,
 	getAddressFromENS,
 	getInteractingAddresses,
-	fetchENSList,
 };

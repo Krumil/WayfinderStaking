@@ -23,7 +23,6 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 	);
 	const scrollPosition = useRef(0);
 	const scrollableDiv = useRef<HTMLElement | null>(null);
-	const [isMobileView, setIsMobileView] = useState<boolean>(false);
 
 	useEffect(() => {
 		const handleBeforeInstallPrompt = (e: Event) => {
@@ -79,18 +78,6 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 		setShowBackButton(pathname !== "/");
 	}, [pathname]);
 
-	useEffect(() => {
-		const checkMobile = () => {
-			setIsMobileView(isMobile);
-		};
-
-		checkMobile();
-		window.addEventListener('resize', checkMobile);
-
-		return () => {
-			window.removeEventListener('resize', checkMobile);
-		};
-	}, []);
 
 	const handleBackClick = () => {
 		if (pathname !== "/") {
@@ -111,10 +98,10 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 
 	return (
 		<header
-			className={`z-50 fixed top-0 text-white p-4 flex justify-between items-center w-full transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"
+			className={`z-50 fixed top-0 text-white p-4 flex justify-between items-center w-full transition-opacity duration-300 ${hidden ? "opacity-0 pointer-events-none" : "opacity-100"
 				} ${className}`}
 		>
-			<div className="flex items-center w-1/4">
+			<div className="flex items-center w-1/3">
 				{showBackButton && (
 					<button
 						onClick={handleBackClick}
@@ -138,7 +125,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 				)}
 				{!showBackButton && (
 					<>
-						{(!isMobileView || (isMobileView && !isInstallable)) && (
+						{(!isMobile || (isMobile && !isInstallable)) && (
 							<div className="flex items-center">
 								<Image
 									src="/assets/prime-token.png"
@@ -151,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 								)}
 							</div>
 						)}
-						{isMobileView && isInstallable && (
+						{isMobile && isInstallable && (
 							<Button
 								onClick={handleInstall}
 								className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-80 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -167,41 +154,73 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 					Wayfinder Staking Dashboard
 				</h1>
 			</div>
-			<div className="flex items-center justify-end gap-3 w-1/4">
-				{!isMobileView && isInstallable && (
+			<div className="flex items-center justify-end gap-4 w-1/3">
+				{!isMobile && isInstallable && (
 					<Button
 						onClick={handleInstall}
-						className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-80 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+						className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-40 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
 					>
 						Install App
 					</Button>
 				)}
-				<Link
-					href="https://x.com/Simo1028"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image src="/assets/x-logo.png" alt="X" width={25} height={25} />
-				</Link>
-				<Link
-					href="https://github.com/krumil"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image
-						src="/assets/github-mark-white.png"
-						alt="GitHub"
-						width={25}
-						height={25}
-					/>
-				</Link>
-				<Link
-					href="https://cache.wayfinder.ai/"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image src="/assets/wayfinder.svg" alt="Wayfinder" width={25} height={25} />
-				</Link>
+				<div className="flex items-center gap-2">
+					<Link
+						href="/faq"
+						className="hover:opacity-80 transition-opacity"
+						title="FAQ"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="23"
+							height="23"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
+							<circle cx="12" cy="12" r="10" />
+							<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+							<line x1="12" y1="17" x2="12.01" y2="17" />
+						</svg>
+					</Link>
+					<Link
+						href="https://x.com/Simo1028"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="hover:opacity-80 transition-opacity"
+						title="Twitter"
+					>
+						<Image src="/assets/x-logo.png" alt="X" width={20} height={20} />
+					</Link>
+					<Link
+						href="https://github.com/krumil"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="hover:opacity-80 transition-opacity"
+						title="GitHub"
+					>
+						<Image
+							src="/assets/github-mark-white.png"
+							alt="GitHub"
+							width={20}
+							height={20}
+						/>
+					</Link>
+					<Link
+						href="https://cache.wayfinder.ai/login?referral=0x8e5e01DCa1706F9Df683c53a6Fc9D4bb8D237153"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="group relative hover:opacity-80 transition-opacity"
+						title="Support me by using my referral link!"
+					>
+						<Image src="/assets/wayfinder.svg" alt="Wayfinder" width={20} height={20} />
+						<span className="absolute hidden group-hover:block bg-black bg-opacity-80 text-white text-xs p-2 rounded whitespace-nowrap right-0 mt-2 z-50">
+							Support me by using my referral! 🙏
+						</span>
+					</Link>
+				</div>
 			</div>
 		</header>
 	);

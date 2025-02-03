@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import CardStack from "@/components/CardStack";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import AnimatedTitle from "@/components/AnimatedTitle";
 import Loader from "@/components/Loader/Loader";
 import toast from "react-hot-toast";
 import {
@@ -11,83 +10,21 @@ import {
 	fetchPrimeValue,
 	formatNumberWithCommas,
 } from "@/lib/utils";
-
-interface AddressData {
-	address: string;
-	ensName: string | null;
-}
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { UserData } from "@/types/global";
+import { ArrowUpRightIcon } from "lucide-react";
 
 interface DashboardProps {
 	userAddresses: string[];
 	userData: UserData | null;
 	stakingRewards: number;
-	addressList: AddressData[];
+	addressList: { address: string; ensName: string | null }[];
 	totalUsers: number;
-}
-
-interface SecondaryAddressBadge {
-	address: string;
-	extra: {
-		inactive_referrals: number;
-	};
-	scores: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	base_scores: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	merged_score_data: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	prime_sunk: number;
-	prime_amount_cached: number;
-	prime_held_duration: number;
-	total_prime_multiplier: number;
-	secondary_addresses: string[];
-	longest_caching_time: number;
-}
-
-interface UserData {
-	avatar_count: number;
-	base_prime_amount_cached: number;
-	base_scores: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	echelon_governance_participation: number;
-	extra: {
-		inactive_referrals: number;
-		secondary_address_badges?: SecondaryAddressBadge[];
-		primary_address_badge_data?: SecondaryAddressBadge;
-	};
-	held_prime_before_unlock: boolean;
-	longest_caching_time: number;
-	participated_in_prime_unlock_vote: boolean;
-	percentage: number;
-	leaderboard_rank: number;
-	prime_amount_cached: number;
-	prime_held_duration: number;
-	prime_sunk: number;
-	secondary_addresses: string[];
-	scores: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	merged_score_data: {
-		prime_score: number;
-		community_score: number;
-		initialization_score: number;
-	};
-	total_users: number;
-	users_referred: number;
 }
 
 const Dashboard = ({
@@ -105,6 +42,8 @@ const Dashboard = ({
 	const [userPercentage, setUserPercentage] = useState<string>("0");
 	const [userPrimeCached, setUserPrimeCached] = useState<number>(0);
 	const [ensNames, setEnsNames] = useState<Record<string, string>>({});
+	const [showCopied, setShowCopied] = useState(false);
+	const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
 	const isMultipleAddresses = userAddresses.length > 1;
 
@@ -177,7 +116,9 @@ const Dashboard = ({
 		return float > 0.01 ? float.toFixed(2) : float.toPrecision(2);
 	};
 
-	function getOrdinalSymbol(number: number) {
+	function getOrdinalSymbol(number: number | undefined) {
+		if (number === undefined) return '';
+
 		const j = number % 10,
 			k = number % 100;
 		if (j == 1 && k != 11) return "st";
@@ -196,7 +137,8 @@ const Dashboard = ({
 
 	const handleCopyAddress = (address: string) => {
 		navigator.clipboard.writeText(address).then(() => {
-			toast.success('Address copied to clipboard!');
+			setShowCopied(true);
+			setTimeout(() => setShowCopied(false), 2000);
 		}).catch((error) => {
 			console.error('Copy failed:', error);
 			toast.error('Failed to copy address. Please try again.');
@@ -205,10 +147,19 @@ const Dashboard = ({
 
 	const stackCards = [
 		{
-			title: <div onClick={() => handleCopyAddress(userAddresses[0])} className="cursor-pointer"><AnimatedTitle addressList={addressList} linkedAddresses={userData?.secondary_addresses || []} /></div>,
+			title: (
+				<div>
+					<div onClick={() => handleCopyAddress(userAddresses[0])} className="cursor-pointer z-[60]">
+						{ensNames[userAddresses[0].toLowerCase()] || `${userAddresses[0].slice(0, 6)}...${userAddresses[0].slice(-4)}`}
+						{userData?.secondary_addresses && userData.secondary_addresses.length > 0 &&
+							<span className="text-sm">{` (+ ${userData.secondary_addresses.length} others)`}</span>
+						}
+					</div>
+				</div>
+			),
 			content: (
 				<div className="w-full rounded-lg shadow-sm text-xl md:text-2xl flex flex-col justify-between items-start relative min-h-[200px]">
-					<div className="mb-4 md:my-5 w-full">
+					<div className="mb-4">
 						<div className="w-full">
 							{getAddressText()} staked a total of{" "}
 							<span className="md:text-3xl text-gradient-transparent">
@@ -220,7 +171,7 @@ const Dashboard = ({
 							</span>{" "}
 						</div>
 					</div>
-					<p className="mb-16">
+					<p className="mb-4">
 						{getEarningText()} earning{" "}
 						<span className="md:text-3xl">
 							{formatPercentage(userPercentage)}%{" "}
@@ -231,29 +182,41 @@ const Dashboard = ({
 						</span>{" "}
 						$PROMPT.
 					</p>
-					<div className="absolute -bottom-[20px] w-full flex justify-between items-end px-4 pb-2">
-						<div className="flex-1" />
+					<a
+						href={`https://cache.wayfinder.ai/cache/account/${userAddresses[0]}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-xs text-gradient-transparent hover:opacity-80 transition-opacity mt-1 flex items-center gap-1 z-[60] relative mb-16 md:mb-12"
+						onClick={(e) => e.stopPropagation()}
+					>
+						Check account on Wayfinder <ArrowUpRightIcon className="w-4 h-4" />
+					</a>
+					<div className="absolute -bottom-[20px] w-full flex justify-center items-center px-4 pb-2">
 						<div className="text-sm md:text-base bg-transparent text-gradient-transparent">
 							<div className="flex justify-end items-baseline text-3xl leading-none">
 								<div>{userData?.leaderboard_rank || 0}</div>
 								<sup className="text-lg text-gradient-transparent">
-									{getOrdinalSymbol(userData?.leaderboard_rank || 0)}
+									{getOrdinalSymbol(userData?.leaderboard_rank)}
 								</sup>
-								<span className="text-lg flex items-baseline">/ {formatNumberWithCommas(totalUsers)}</span>
-							</div>
-						</div>
-						<div className="flex-1 flex justify-end">
-							<div
-								onClick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									handleImageDownload();
-								}}
-								className="pointer-events-auto"
-							>
+								<span className="text-lg flex items-baseline">/ {formatNumberWithCommas(totalUsers || 0)}</span>
 							</div>
 						</div>
 					</div>
+
+					<TooltipProvider>
+						<Tooltip open={showCopied}>
+							<TooltipTrigger className="w-full h-full absolute inset-0" />
+							<TooltipContent
+								side="bottom"
+								align="center"
+								sideOffset={16}
+								alignOffset={16}
+								className="bg-judge-gray-800/80 text-white border-none animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200"
+							>
+								<p className="text-gradient-transparent text-xs sm:text-sm">Copied!</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
 				</div>
 			),
 		},
@@ -267,7 +230,7 @@ const Dashboard = ({
 							type="number"
 							value={fullyDiluitedValue}
 							onChange={handleFdvChange}
-							className="input input-sm !z-50 mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right"
+							className="input input-sm !z-[60] mt-6 md:mt-0 !bg-hampton-200 text-md text-judge-gray-800 placeholder-judge-gray-600 w-4/12 md:w-3/12 text-center md:text-right"
 						/>
 					</div>
 					<div>
@@ -351,86 +314,325 @@ const Dashboard = ({
 			),
 		},
 		{
-			title: <div>Secondary Addresses</div>,
+			title: <div>Badges</div>,
 			content: (
 				<div className="text-base">
-					{userData?.extra?.secondary_address_badges?.map((badge, index) => (
-						<div key={index} className="mb-4 last:mb-0 p-3 rounded-lg bg-judge-gray-800/20">
-							<div className="text-lg font-semibold mb-2 text-gradient-transparent">
-								{ensNames[badge.address?.toLowerCase()] ||
-									`${badge.address?.slice(0, 6)}...${badge.address?.slice(-4)}`}
+					{(() => {
+						if (!userData?.extra?.secondary_address_badges) {
+							return <div className="text-center text-judge-gray-400">No badges found</div>;
+						}
+
+						interface Badge {
+							name: string;
+							image: string;
+							addresses: { address: string; multiplier: number }[];
+						}
+
+						const BADGE_IMAGES = {
+							ECHELON_GOVERNANCE: "wayfinder_assets/badges_webp/echelon_election_2.webp",
+							PRIME_BEFORE_UNLOCK: "wayfinder_assets/badges_webp/prime_pre_unlock.webp",
+							PRIME_UNLOCK_VOTE: "wayfinder_assets/badges_webp/staking_max.webp",
+							PRIME_HELD_1YEAR: "wayfinder_assets/badges_webp/prime_held_1year.webp",
+							GOVERNANCE_VOTE_2: "wayfinder_assets/badges_webp/echelon_election_2.webp",
+							GOVERNANCE_VOTE_3: "wayfinder_assets/badges_webp/echelon_election_2.webp",
+							REFERRER_1: "wayfinder_assets/badges_webp/referred_1.webp",
+							REFERRER_5: "wayfinder_assets/badges_webp/referred_5.webp",
+							REFERRER_10: "wayfinder_assets/badges_webp/referred_10.webp",
+							REFERRER_25: "wayfinder_assets/badges_webp/referred_25.webp",
+							REFERRER_50: "wayfinder_assets/badges_webp/referred_50.webp",
+							STAKING_30DAYS: "wayfinder_assets/badges_webp/staking_30days.webp",
+							STAKING_90DAYS: "wayfinder_assets/badges_webp/staking_90days.webp",
+							STAKING_6MON: "wayfinder_assets/badges_webp/staking_6mon.webp",
+							STAKING_1YEAR: "wayfinder_assets/badges_webp/staking_1year.webp",
+							STAKING_1_5YEAR: "wayfinder_assets/badges_webp/staking_1.5year.webp",
+							STAKING_2YEAR: "wayfinder_assets/badges_webp/staking_2year.webp",
+							STAKING_2_5YEAR: "wayfinder_assets/badges_webp/staking_2.5year.webp",
+							PRIME_HELD_3MON: "wayfinder_assets/badges_webp/prime_held_3mon.webp",
+							PRIME_HELD_6MON: "wayfinder_assets/badges_webp/prime_held_6mon.webp",
+						};
+
+						const badges: Record<string, Badge> = {};
+
+						const addBadge = (name: string, address: string, multiplier: number, image: string) => {
+							if (!badges[name]) {
+								badges[name] = { name, image, addresses: [] };
+							}
+							badges[name].addresses.push({ address, multiplier });
+						};
+
+						// Handle primary address badges first
+						const primaryBadges = userData.extra.primary_address_badge_data;
+						if (primaryBadges) {
+							const address = userAddresses[0];
+							const addressData = addressList.find(a => a.address.toLowerCase() === address.toLowerCase());
+							const displayAddress = addressData?.ensName || address;
+
+							// Check governance participation
+							if (primaryBadges.echelon_governance_participation > 0) {
+								addBadge("Echelon Governance", displayAddress, 1, BADGE_IMAGES.ECHELON_GOVERNANCE);
+							}
+
+							// Check Prime before unlock
+							if (primaryBadges.held_prime_before_unlock) {
+								addBadge("Prime Before Unlock", displayAddress, 1, BADGE_IMAGES.PRIME_BEFORE_UNLOCK);
+							}
+
+							// Check Prime unlock vote
+							if (primaryBadges.participated_in_prime_unlock_vote) {
+								addBadge("Prime Unlock Vote", displayAddress, 1, BADGE_IMAGES.PRIME_UNLOCK_VOTE);
+							}
+
+							// Check Prime held duration
+							if (primaryBadges.prime_held_duration > 0) {
+								const days = Math.floor(primaryBadges.prime_held_duration / 86400);
+								let image = BADGE_IMAGES.STAKING_30DAYS;
+								let badgeName = "30 Days";
+
+								if (days >= 900) {
+									image = BADGE_IMAGES.STAKING_2_5YEAR;
+									badgeName = "900 Days";
+								} else if (days >= 720) {
+									image = BADGE_IMAGES.STAKING_2YEAR;
+									badgeName = "720 Days";
+								} else if (days >= 540) {
+									image = BADGE_IMAGES.STAKING_1_5YEAR;
+									badgeName = "540 Days";
+								} else if (days >= 360) {
+									image = BADGE_IMAGES.STAKING_1YEAR;
+									badgeName = "360 Days";
+								} else if (days >= 180) {
+									image = BADGE_IMAGES.STAKING_6MON;
+									badgeName = "180 Days";
+								} else if (days >= 90) {
+									image = BADGE_IMAGES.STAKING_90DAYS;
+									badgeName = "90 Days";
+								} else if (days >= 30) {
+									image = BADGE_IMAGES.STAKING_30DAYS;
+									badgeName = "30 Days";
+								}
+
+								addBadge(badgeName, displayAddress, primaryBadges.total_prime_multiplier, image);
+							}
+
+							// Check governance votes
+							if (primaryBadges.governance_vote_2) {
+								addBadge("Governance Vote 2", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_2);
+							}
+							if (primaryBadges.governance_vote_3) {
+								addBadge("Governance Vote 3", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_3);
+							}
+
+							// Check users referred
+							if (primaryBadges.users_referred > 0) {
+								let image = BADGE_IMAGES.REFERRER_1;
+								let badgeName = "Referrer";
+
+								if (primaryBadges.users_referred >= 50) {
+									image = BADGE_IMAGES.REFERRER_50;
+									badgeName = "50+ Referrals";
+								} else if (primaryBadges.users_referred >= 25) {
+									image = BADGE_IMAGES.REFERRER_25;
+									badgeName = "25+ Referrals";
+								} else if (primaryBadges.users_referred >= 10) {
+									image = BADGE_IMAGES.REFERRER_10;
+									badgeName = "10+ Referrals";
+								} else if (primaryBadges.users_referred >= 5) {
+									image = BADGE_IMAGES.REFERRER_5;
+									badgeName = "5+ Referrals";
+								}
+
+								addBadge(badgeName, displayAddress, 1, image);
+							}
+
+							// Check longest caching time
+							if (primaryBadges.longest_caching_time >= 365) {
+								addBadge("1 Year Cache", displayAddress, primaryBadges.total_prime_multiplier, BADGE_IMAGES.PRIME_HELD_1YEAR);
+							}
+						}
+
+						// Handle secondary address badges
+						userData.extra.secondary_address_badges.forEach((badge, addressIndex) => {
+							// Skip the first entry (index 0) as it's already handled by primary_address_badge_data
+							if (addressIndex === 0) return;
+
+							const address = userData?.secondary_addresses?.[addressIndex - 1] || '';
+							const addressData = addressList.find(a => a.address.toLowerCase() === address.toLowerCase());
+							const displayAddress = addressData?.ensName || address;
+
+							// Check governance participation
+							if (badge.echelon_governance_participation > 0) {
+								addBadge("Echelon Governance", displayAddress, 1, BADGE_IMAGES.ECHELON_GOVERNANCE);
+							}
+
+							// Check Prime before unlock
+							if (badge.held_prime_before_unlock) {
+								addBadge("Prime Before Unlock", displayAddress, 1, BADGE_IMAGES.PRIME_BEFORE_UNLOCK);
+							}
+
+							// Check Prime unlock vote
+							if (badge.participated_in_prime_unlock_vote) {
+								addBadge("Prime Unlock Vote", displayAddress, 1, BADGE_IMAGES.PRIME_UNLOCK_VOTE);
+							}
+
+							// Check Prime held duration
+							if (badge.prime_held_duration > 0) {
+								const days = Math.floor(badge.prime_held_duration / 86400);
+								let image = BADGE_IMAGES.STAKING_30DAYS;
+								let badgeName = "30 Days";
+
+								if (days >= 900) {
+									image = BADGE_IMAGES.STAKING_2_5YEAR;
+									badgeName = "900 Days";
+								} else if (days >= 720) {
+									image = BADGE_IMAGES.STAKING_2YEAR;
+									badgeName = "720 Days";
+								} else if (days >= 540) {
+									image = BADGE_IMAGES.STAKING_1_5YEAR;
+									badgeName = "540 Days";
+								} else if (days >= 360) {
+									image = BADGE_IMAGES.STAKING_1YEAR;
+									badgeName = "360 Days";
+								} else if (days >= 180) {
+									image = BADGE_IMAGES.STAKING_6MON;
+									badgeName = "180 Days";
+								} else if (days >= 90) {
+									image = BADGE_IMAGES.STAKING_90DAYS;
+									badgeName = "90 Days";
+								} else if (days >= 30) {
+									image = BADGE_IMAGES.STAKING_30DAYS;
+									badgeName = "30 Days";
+								}
+
+								addBadge(badgeName, displayAddress, badge.total_prime_multiplier, image);
+							}
+
+							// Check governance votes
+							if (badge.governance_vote_2) {
+								addBadge("Governance Vote 2", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_2);
+							}
+							if (badge.governance_vote_3) {
+								addBadge("Governance Vote 3", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_3);
+							}
+
+							// Check users referred
+							if (badge.users_referred > 0) {
+								let image = BADGE_IMAGES.REFERRER_1;
+								let badgeName = "Referrer";
+
+								if (badge.users_referred >= 50) {
+									image = BADGE_IMAGES.REFERRER_50;
+									badgeName = "50+ Referrals";
+								} else if (badge.users_referred >= 25) {
+									image = BADGE_IMAGES.REFERRER_25;
+									badgeName = "25+ Referrals";
+								} else if (badge.users_referred >= 10) {
+									image = BADGE_IMAGES.REFERRER_10;
+									badgeName = "10+ Referrals";
+								} else if (badge.users_referred >= 5) {
+									image = BADGE_IMAGES.REFERRER_5;
+									badgeName = "5+ Referrals";
+								}
+
+								addBadge(badgeName, displayAddress, 1, image);
+							}
+
+							// Check longest caching time
+							if (badge.longest_caching_time >= 365) {
+								addBadge("1 Year Cache", displayAddress, badge.total_prime_multiplier, BADGE_IMAGES.PRIME_HELD_1YEAR);
+							}
+						});
+
+						if (Object.keys(badges).length === 0) {
+							return <div className="text-center text-judge-gray-400">No badges found</div>;
+						}
+
+						return (
+							<div className="flex flex-col gap-2 md:gap-4">
+								<div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+									{Object.values(badges).map((badge) => (
+										<div
+											key={badge.name}
+											className={`p-1.5 rounded-lg bg-judge-gray-800/20 cursor-pointer transition-colors z-[60] ${selectedBadge === badge.name ? 'bg-judge-gray-800/40 ring-1 ring-judge-gray-400/20' : 'hover:bg-judge-gray-800/30'}`}
+											onClick={() => setSelectedBadge(badge.name)}
+										>
+											<div className="flex flex-col items-center text-center">
+												<div className="w-8 h-8">
+													<img
+														src={`https://staticfiles.wayfinder.ai/${badge.image}`}
+														alt={badge.name}
+														className="w-full h-full object-contain"
+													/>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+								<div className="h-px bg-judge-gray-800/20" />
+								<div className="w-full">
+									<div className="text-sm font-medium text-gradient-transparent mb-2">
+										{selectedBadge || 'Select a badge'}
+									</div>
+									{selectedBadge && badges[selectedBadge] && (
+										<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+											{badges[selectedBadge].addresses.map((addr) => (
+												<div
+													key={addr.address}
+													className="text-[10px] leading-[14px] text-white p-1 rounded bg-judge-gray-800/10 truncate"
+												>
+													{addr.address}
+													{addr.multiplier !== 1 && (
+														<span className="ml-1 text-[8px] text-judge-gray-500">
+															({addr.multiplier}x)
+														</span>
+													)}
+												</div>
+											))}
+										</div>
+									)}
+								</div>
 							</div>
-							<div className="grid grid-cols-2 gap-2">
-								<div className="flex flex-row items-center justify-between">
-									<span className="text-sm text-judge-gray-400">Total Score:</span>
-									<span>
-										<AnimatedNumber value={(badge.merged_score_data?.prime_score || 0) + (badge.merged_score_data?.community_score || 0) + (badge.merged_score_data?.initialization_score || 0)} />
-									</span>
-								</div>
-								<div className="flex flex-row items-center justify-between">
-									<span className="text-sm text-judge-gray-400">Prime:</span>
-									<span>
-										<AnimatedNumber value={badge.prime_amount_cached / 1_000_000_000_000_000_000 || 0} />
-									</span>
-								</div>
-								<div className="flex flex-row items-center justify-between">
-									<span className="text-sm text-judge-gray-400">Duration:</span>
-									<span>
-										<AnimatedNumber value={badge.prime_held_duration / 86400 || 0} />d
-									</span>
-								</div>
-								<div className="flex flex-row items-center justify-between">
-									<span className="text-sm text-judge-gray-400">Multiplier:</span>
-									<span>
-										<AnimatedNumber value={badge.total_prime_multiplier || 0} />x
-									</span>
-								</div>
-							</div>
+						);
+					})()}
+				</div>
+			),
+		},
+		{
+			title: <div>Linked Addresses</div>,
+			content: (
+				<div className="text-base">
+					{addressList.length > 1 ? (
+						<div className="grid grid-cols-2 gap-1">
+							{addressList.slice(1).map((addressData, index) => (
+								<a
+									key={index}
+									href={`/address/${addressData.address}`}
+									className="p-1 rounded-lg bg-judge-gray-800/20 hover:bg-judge-gray-800/40 transition-colors flex items-center justify-between group relative z-[60]"
+								>
+									<div className="flex items-center w-full gap-2">
+										<span className="text-sm font-mono flex-1 truncate">
+											<span className="md:hidden">
+												{`${addressData.ensName?.slice(0, 4) || addressData.address.slice(0, 4)}...${addressData.ensName?.slice(-4) || addressData.address.slice(-4)}`}
+											</span>
+											<span className="hidden md:inline">
+												{addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
+											</span>
+										</span>
+										<span className="text-xs hidden md:block text-judge-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+											Show
+										</span>
+										<ArrowUpRightIcon className="w-4 h-4" />
+									</div>
+								</a>
+							))}
 						</div>
-					))}
-					{(!userData?.extra?.secondary_address_badges || userData.extra.secondary_address_badges.length === 0) && (
-						<div className="text-center text-judge-gray-400">No secondary addresses found</div>
+					) : (
+						<div className="text-center text-judge-gray-400">No linked addresses found</div>
 					)}
 				</div>
 			),
 		},
 	];
 
-	const handleImageDownload = async () => {
-		try {
-			const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wayfinder-staking.vercel.app';
-			const timestamp = Date.now();
-			const cardImageUrl = `${baseUrl}/api/card-image/${userAddresses[0]}?t=${timestamp}`;
-
-			const response = await fetch(cardImageUrl, {
-				headers: {
-					'Cache-Control': 'no-cache, no-store, must-revalidate',
-					'Pragma': 'no-cache',
-					'Expires': '0'
-				}
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to fetch image');
-			}
-
-			const blob = await response.blob();
-			const downloadUrl = window.URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = downloadUrl;
-			const addressDisplay = addressList.find(a => a.address.toLowerCase() === userAddresses[0].toLowerCase())?.ensName ||
-				userAddresses[0].slice(0, 6);
-			link.download = `wayfinder-staking-${addressDisplay}.png`;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			window.URL.revokeObjectURL(downloadUrl);
-			toast.success('Image downloaded successfully!');
-		} catch (error) {
-			console.error('Download error:', error);
-			toast.error('Failed to download image. Please try again.');
-		}
-	};
 
 	return (
 		<div>

@@ -38,15 +38,14 @@ const CardStack: FC<CardStackProps> = ({ cards }) => {
 			>
 				{cards.map((card, index) => (
 					<div
-						className="animated-border mb-8 max-w-[600px] !w-9/12 md:w-full min-h-[400px] relative !overflow-visible !z-50"
+						className="animated-border mb-8 max-w-[600px] !w-9/12 md:w-full min-h-[400px] relative !overflow-visible !z-[40]"
 						key={index}
 					>
 						{selectedIndex === index && (
 							<div
-								className={`flex flex-col w-full h-full p-4 md:p-8 transition-opacity duration-250 ${isTransitioning ? "opacity-0" : "opacity-100"
-									}`}
+								className={`flex flex-col w-full h-full p-4 md:p-8 transition-opacity duration-250 relative z-[50] ${isTransitioning ? "opacity-0" : "opacity-100"}`}
 							>
-								<div className="relative mb-2 text-4xl md:text-6xl text-gradient-transparent">
+								<div className="relative mb-2 text-4xl md:text-6xl text-gradient-transparent z-[60]">
 									{card.title}
 								</div>
 								<div className="grow">{card.content}</div>

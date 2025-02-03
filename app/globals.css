@@ -184,3 +184,25 @@ body {
     width: 12px;
   }
 }
+
+@keyframes highlightPulse {
+  0% {
+    border-color: #958d5d;
+    box-shadow: 0 0 0 0 rgba(149, 141, 93, 0.2);
+  }
+  70% {
+    border-color: #958d5d;
+    box-shadow: 0 0 0 10px rgba(149, 141, 93, 0);
+  }
+  100% {
+    border-color: #958d5d;
+    box-shadow: 0 0 0 0 rgba(149, 141, 93, 0);
+  }
+}
+
+.highlight-pulse {
+  animation: highlightPulse 2s infinite;
+  border-width: 2px;
+  border-color: #958d5d;
+  background-color: rgba(149, 141, 93, 0.05);
+}

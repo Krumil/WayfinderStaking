@@ -4,7 +4,6 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { formatNumberWithCommas, getOrdinalIndicator, isMobile, truncateText } from "@/lib/utils";
-import { getENSNameFromAddress } from "@/lib/contract";
 import { motion, useAnimation } from "framer-motion";
 import Loader from "@/components/Loader/Loader";
 
@@ -18,7 +17,6 @@ interface LeaderboardProps {
 
 interface AddressItem {
 	address: string;
-	name: string;
 	data: any;
 	prime_amount_cached?: number;
 }
@@ -41,7 +39,7 @@ const calculateTotalScoreMultipleAddresses = (addressesData: any) => {
 };
 
 const AddressListItem = React.memo(({ index, style, data }: any) => {
-	const { addresses, favorites, toggleFavorite, isLoadingMore, highlightedAddress } = data;
+	const { addresses, favorites, toggleFavorite, highlightedAddress } = data;
 	const isSkeletonItem = index >= addresses.length;
 	const skeletonIndex = index - addresses.length;
 
@@ -106,10 +104,12 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 								<div className="flex-shrink-0 w-15 h-10 rounded-full bg-gradient-to-br from-judge-green-500 to-judge-blue-500 flex items-center justify-center">
 									<span className="text-lg font-bold text-white">{addresses[index].data.leaderboard_rank}<sup className="text-xs">{getOrdinalIndicator(addresses[index].data.leaderboard_rank)}</sup></span>
 								</div>
-								<div className="flex flex-col">
-									<div className="text-xl md:text-2xl text-judge-gray-200">{truncateText(addresses[index].name, isMobile)}</div>
-									{!(addresses[index].name.toLowerCase() === addresses[index].address.toLowerCase() || addresses[index].name.toLowerCase() === `${addresses[index].address.slice(0, isMobile ? 4 : 8)}...${addresses[index].address.slice(isMobile ? -4 : -8)}`.toLowerCase()) && (
-										<div className="text-sm text-judge-gray-400">
+								<div className={`flex flex-col ${!(addresses[index].data.ens_name) ? 'justify-center' : ''}`}>
+									<div className="text-xl md:text-2xl text-judge-gray-200">
+										{addresses[index].data.ens_name ? truncateText(addresses[index].data.ens_name, isMobile) : `${addresses[index].address.slice(0, isMobile ? 4 : 8)}...${addresses[index].address.slice(isMobile ? -4 : -8)}`}
+									</div>
+									{addresses[index].data.ens_name && (
+										<div className="text-sm text-judge-gray-400 h-[1.25rem]">
 											{addresses[index].address.slice(0, isMobile ? 4 : 8)}...{addresses[index].address.slice(isMobile ? -4 : -8)}
 										</div>
 									)}
@@ -160,7 +160,7 @@ AddressListItem.displayName = 'AddressListItem';
 const BundleListItem = React.memo(({ bundle, addresses, index }: { bundle: BundleItem; addresses: AddressItem[]; index: number }) => {
 	const bundleAddresses = bundle.addresses.map(addr => addresses.find(item => item.address.toLowerCase() === addr.toLowerCase()));
 
-	if (bundleAddresses.some(addr => !addr?.name)) {
+	if (bundleAddresses.some(addr => !addr?.data?.ens_name)) {
 		return null;
 	}
 
@@ -172,13 +172,13 @@ const BundleListItem = React.memo(({ bundle, addresses, index }: { bundle: Bundl
 				animate={{ opacity: 1, y: 0 }}
 				transition={{
 					duration: 0.4,
-					delay: index * 0.1, // This creates the stagger effect
+					delay: index * 0.1,
 					ease: [0.4, 0, 0.2, 1]
 				}}
 			>
 				<div className="ml-4 flex-grow">
 					<div className="text-xl text-judge-gray-400">
-						{bundleAddresses.map(addr => addr?.name).join(", ")}
+						{bundleAddresses.map(addr => addr?.data?.ens_name || addr?.address).join(", ")}
 					</div>
 				</div>
 				<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
@@ -202,7 +202,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	const [favorites, setFavorites] = useState<string[]>([]);
 	const [bundleFavorites, setBundleFavorites] = useState<string[][]>([]);
 	const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
-	const [ensCache, setEnsCache] = useState<Record<string, string>>({});
 	const [isNearBottom, setIsNearBottom] = useState(false);
 	const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
 	const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -211,12 +210,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	const prevScrollOffset = useRef(0);
 	const loadingRef = useRef(false);
 	const scrollThresholdRef = useRef(0);
-	const SCROLL_THRESHOLD = 300; // pixels to scroll before removing highlight
+	const SCROLL_THRESHOLD = 300;
 
 	const scrollToTop = () => {
 		if (listRef.current) {
 			listRef.current.scrollToItem(0)
-
 		}
 	};
 
@@ -228,56 +226,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 			localStorage.setItem('favoriteAddresses', JSON.stringify(newFavorites));
 			return newFavorites;
 		});
-	}, []);
-
-	const fetchENSNames = useCallback(async (addresses: any[]) => {
-		// First check which addresses need ENS resolution
-		const uncachedAddresses = addresses.filter(item => !ensCache[item.address.toLowerCase()]);
-
-		// If all addresses are cached, just update the names from cache
-		if (uncachedAddresses.length === 0) {
-			setAllAddresses(addresses.map(item => ({
-				...item,
-				name: ensCache[item.address.toLowerCase()] || item.address
-			})));
-			return;
-		}
-
-		// Fetch new ENS names
-		try {
-			const ensPromises = uncachedAddresses.map(async (item) => {
-				const ensName = await getENSNameFromAddress(item.address, true);
-				return { address: item.address.toLowerCase(), name: ensName || item.address };
-			});
-
-			const ensResults = await Promise.all(ensPromises);
-
-			// Update cache in one go
-			setEnsCache(prevCache => {
-				const newCache = { ...prevCache };
-				ensResults.forEach(result => {
-					newCache[result.address] = result.name;
-				});
-				return newCache;
-			});
-
-			// Update addresses with all names (cached + new)
-			setAllAddresses(addresses.map(item => {
-				const lowercaseAddr = item.address.toLowerCase();
-				const ensResult = ensResults.find(r => r.address === lowercaseAddr);
-				return {
-					...item,
-					name: ensResult?.name || ensCache[lowercaseAddr] || item.address
-				};
-			}));
-		} catch (error) {
-			console.error('Error fetching ENS names:', error);
-			// On error, just use addresses as names
-			setAllAddresses(addresses.map(item => ({
-				...item,
-				name: ensCache[item.address.toLowerCase()] || item.address
-			})));
-		}
 	}, []);
 
 	useEffect(() => {
@@ -294,13 +242,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
 	useEffect(() => {
 		if (addressesData.length > 0) {
-			fetchENSNames(addressesData).finally(() => {
-				setIsInitialLoading(false);
-			});
+			setAllAddresses(addressesData);
+			setIsInitialLoading(false);
 		} else {
 			setIsInitialLoading(false);
 		}
-	}, [addressesData, fetchENSNames]);
+	}, [addressesData]);
 
 	useEffect(() => {
 		const calculateBundleScores = () => {
@@ -318,26 +265,27 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	}, [bundleFavorites, addressesData]);
 
 	useEffect(() => {
-		if (addressToHighlight && listRef.current) {
+		if (addressToHighlight && allAddresses.length > 0) {
 			const index = allAddresses.findIndex(
 				item => item.address.toLowerCase() === addressToHighlight.toLowerCase()
 			);
 			if (index !== -1) {
-				// Add a small delay to ensure the list has rendered
-				setTimeout(() => {
-					// Scroll to the item and center it in the viewport
-					listRef.current?.scrollToItem(index, "center");
-				}, 100);
+				setActiveHighlight(addressToHighlight);
+
+				const scrollToHighlightedAddress = () => {
+					if (listRef.current) {
+						listRef.current.scrollToItem(index, "center");
+					} else {
+						setTimeout(scrollToHighlightedAddress, 100);
+					}
+				};
+
+				scrollToHighlightedAddress();
 			}
+		} else {
+			setActiveHighlight(null);
 		}
 	}, [addressToHighlight, allAddresses]);
-
-	useEffect(() => {
-		if (addressToHighlight) {
-			setActiveHighlight(addressToHighlight);
-			scrollThresholdRef.current = 0;
-		}
-	}, [addressToHighlight]);
 
 	const filteredAddresses = useMemo(() => {
 		return showOnlyFavorites
@@ -355,21 +303,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 		return `${calculatedHeight}px`;
 	}, [showOnlyFavorites, filteredAddresses.length]);
 
-	// Modified handleScroll function
 	const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
 		if (scrollUpdateWasRequested) return;
 
 		const scrollingDown = scrollOffset > prevScrollOffset.current;
-		const scrollDelta = Math.abs(scrollOffset - prevScrollOffset.current);
-
-		// Update scroll threshold tracking
-		if (activeHighlight) {
-			scrollThresholdRef.current += scrollDelta;
-			if (scrollThresholdRef.current > SCROLL_THRESHOLD) {
-				setActiveHighlight(null);
-			}
-		}
-
 		prevScrollOffset.current = scrollOffset;
 
 		if (!showOnlyFavorites && scrollingDown && listRef.current) {
@@ -389,7 +326,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 				}, 1000);
 			}
 		}
-	}, [showOnlyFavorites, isLoadingMore, onLoadMore, activeHighlight]);
+	}, [showOnlyFavorites, isLoadingMore, onLoadMore]);
 
 	const totalItemCount = useMemo(() => {
 		const baseCount = filteredAddresses.length;
@@ -429,7 +366,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 										addresses: filteredAddresses,
 										favorites,
 										toggleFavorite,
-										isLoadingMore,
 										highlightedAddress: activeHighlight
 									}}
 									useIsScrolling

@@ -76,7 +76,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
 					<Button
 						onClick={handleSearchPosition}
 						disabled={!isValidAddresses || isMultipleAddresses}
-						className="bg-[#0b0f0d] bg-opacity-20 hover:bg-opacity-80 text-judge-gray-200  disabled:opacity-30 disabled:cursor-not-allowed"
+						className="bg-[#0b0f0d] bg-opacity-20 text-judge-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
 					>
 						Show Position
 					</Button>

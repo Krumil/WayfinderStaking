@@ -127,58 +127,52 @@ const BuyMeACoffeeButton = () => {
 							<div className="py-4">
 								<div className="flex space-x-2 mb-2">
 									<button
-										className={`btn grow ${
-											selectedAmount === "0.001"
+										className={`btn grow ${selectedAmount === "0.001"
 												? "!bg-judge-gray-200"
 												: "!bg-judge-gray-800 !border-judge-gray-950"
-										}`}
+											}`}
 										onClick={() => handlePredefinedAmountClick("0.001")}
 										disabled={loading}
 									>
 										<span
-											className={`${
-												selectedAmount === "0.001"
+											className={`${selectedAmount === "0.001"
 													? "text-judge-gray-800"
 													: "text-judge-gray-200 !border-judge-gray-950"
-											}`}
+												}`}
 										>
 											0.001 ETH
 										</span>
 									</button>
 									<button
-										className={`btn grow ${
-											selectedAmount === "0.01"
+										className={`btn grow ${selectedAmount === "0.01"
 												? "!bg-judge-gray-200"
 												: "!bg-judge-gray-800 !border-judge-gray-950"
-										}`}
+											}`}
 										onClick={() => handlePredefinedAmountClick("0.01")}
 										disabled={loading}
 									>
 										<span
-											className={`${
-												selectedAmount === "0.01"
+											className={`${selectedAmount === "0.01"
 													? "text-judge-gray-800"
 													: "text-judge-gray-200 !border-judge-gray-950"
-											}`}
+												}`}
 										>
 											0.01 ETH
 										</span>
 									</button>
 									<button
-										className={`btn grow ${
-											selectedAmount === "0.1"
+										className={`btn grow ${selectedAmount === "0.1"
 												? "!bg-judge-gray-200"
 												: "!bg-judge-gray-800"
-										}`}
+											}`}
 										onClick={() => handlePredefinedAmountClick("0.1")}
 										disabled={loading}
 									>
 										<span
-											className={`${
-												selectedAmount === "0.1"
+											className={`${selectedAmount === "0.1"
 													? "text-judge-gray-800"
 													: "text-judge-gray-200"
-											}`}
+												}`}
 										>
 											0.1 ETH
 										</span>

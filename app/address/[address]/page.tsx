@@ -4,9 +4,10 @@ import Dashboard from "@/components/Dashboard";
 import React, { useEffect, useState } from "react";
 import Loader from "@/components/Loader/Loader";
 import { stakingRewards } from "@/lib/utils";
-import { getAddressFromENS, getENSNameFromAddress, fetchENSList } from "@/lib/contract";
+import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
 import { useParams } from "next/navigation";
 import { useAddressesStore } from "@/stores/addresses";
+import type { UserData, SecondaryAddressBadge } from "@/types/global";
 
 interface Address {
 	address: string;
@@ -33,26 +34,8 @@ const AddressPage = () => {
 	const [fetchedAddress, setFetchedAddress] = useState<boolean>(false);
 	const [userData, setUserData] = useState<UserData | null>(null);
 	const [totalUsers, setTotalUsers] = useState<number>(0);
+	const [secondaryAddressList, setSecondaryAddressList] = useState<Address[]>([]);
 	const { allAddressesData } = useAddressesStore();
-
-	useEffect(() => {
-		fetchENSList();
-	}, []);
-
-	useEffect(() => {
-		const fetchGlobalData = async () => {
-			try {
-				const response = await fetch("/api/data/global");
-				if (!response.ok) throw new Error('Failed to fetch global data');
-				const data = await response.json();
-				setTotalUsers(data.total_addresses);
-			} catch (error) {
-				console.error('Error fetching global data:', error);
-			}
-		};
-
-		fetchGlobalData();
-	}, []);
 
 	useEffect(() => {
 		const fetchAddress = async () => {
@@ -105,6 +88,7 @@ const AddressPage = () => {
 				const data: ApiResponse = await response.json();
 				if (data.addresses_found.length > 0) {
 					setUserData(data.addresses_found[0].data);
+					setTotalUsers(data.total_users);
 				}
 			} catch (error) {
 				console.error('Error fetching user data:', error);
@@ -114,17 +98,46 @@ const AddressPage = () => {
 		fetchUserData();
 	}, [address, allAddressesData]);
 
+	useEffect(() => {
+		if (!userData?.secondary_addresses) return;
+
+		const fetchSecondaryENS = async () => {
+			const addressList = await Promise.all(
+				userData.secondary_addresses.map(async (addr) => {
+					try {
+						const response = await fetch('/api/data/ens', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ address: addr }),
+						});
+						const data = await response.json();
+						return {
+							address: addr,
+							ensName: data.ens_name || null,
+						};
+					} catch (error) {
+						console.error('Error fetching ENS:', error);
+						return { address: addr, ensName: null };
+					}
+				})
+			);
+			setSecondaryAddressList(addressList);
+		};
+
+		fetchSecondaryENS();
+	}, [userData?.secondary_addresses]);
+
 	return (
 		<div>
 			{fetchedAddress &&
 				stakingRewards !== 0 &&
-				userData ? (
+				userData && totalUsers !== 0 ? (
 				<div className="flex flex-col h-screen">
 					<Dashboard
 						userAddresses={[address!.address]}
 						userData={userData}
 						stakingRewards={stakingRewards}
-						addressList={[address!]}
+						addressList={[address!, ...secondaryAddressList]}
 						totalUsers={totalUsers}
 					/>
 				</div>
