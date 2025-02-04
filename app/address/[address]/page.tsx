@@ -35,6 +35,7 @@ const AddressPage = () => {
 	const [userData, setUserData] = useState<UserData | null>(null);
 	const [totalUsers, setTotalUsers] = useState<number>(0);
 	const [secondaryAddressList, setSecondaryAddressList] = useState<Address[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const { allAddressesData } = useAddressesStore();
 
 	useEffect(() => {
@@ -66,6 +67,7 @@ const AddressPage = () => {
 		if (!address) return;
 
 		const fetchUserData = async () => {
+			setIsLoading(true);
 			// Check cache first
 			const cachedData = allAddressesData.find(item =>
 				item.address.toLowerCase() === address.address.toLowerCase()
@@ -73,6 +75,8 @@ const AddressPage = () => {
 
 			if (cachedData) {
 				setUserData(cachedData.data);
+				setTotalUsers(allAddressesData.length);
+				setIsLoading(false);
 				return;
 			}
 
@@ -89,9 +93,15 @@ const AddressPage = () => {
 				if (data.addresses_found.length > 0) {
 					setUserData(data.addresses_found[0].data);
 					setTotalUsers(data.total_users);
+				} else {
+					setUserData(null);
+					setTotalUsers(data.total_users);
 				}
 			} catch (error) {
 				console.error('Error fetching user data:', error);
+				setUserData(null);
+			} finally {
+				setIsLoading(false);
 			}
 		};
 
@@ -127,25 +137,34 @@ const AddressPage = () => {
 		fetchSecondaryENS();
 	}, [userData?.secondary_addresses]);
 
+	if (!fetchedAddress || isLoading) {
+		return (
+			<div className="flex justify-center items-center h-screen">
+				<Loader />
+			</div>
+		);
+	}
+
+	if (!address) {
+		return (
+			<div className="flex justify-center items-center h-screen">
+				<div className="text-center">
+					<h1 className="text-2xl font-bold mb-2">Invalid Address</h1>
+					<p className="text-judge-gray-400">The provided address is invalid.</p>
+				</div>
+			</div>
+		);
+	}
+
 	return (
-		<div>
-			{fetchedAddress &&
-				stakingRewards !== 0 &&
-				userData && totalUsers !== 0 ? (
-				<div className="flex flex-col h-screen">
-					<Dashboard
-						userAddresses={[address!.address]}
-						userData={userData}
-						stakingRewards={stakingRewards}
-						addressList={[address!, ...secondaryAddressList]}
-						totalUsers={totalUsers}
-					/>
-				</div>
-			) : (
-				<div className="flex justify-center items-center h-screen">
-					<Loader />
-				</div>
-			)}
+		<div className="flex flex-col h-screen">
+			<Dashboard
+				userAddresses={[address.address]}
+				userData={userData}
+				stakingRewards={stakingRewards}
+				addressList={[address, ...secondaryAddressList]}
+				totalUsers={totalUsers}
+			/>
 		</div>
 	);
 };

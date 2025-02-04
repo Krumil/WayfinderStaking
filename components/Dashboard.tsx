@@ -44,10 +44,23 @@ const Dashboard = ({
 	const [ensNames, setEnsNames] = useState<Record<string, string>>({});
 	const [showCopied, setShowCopied] = useState(false);
 	const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
+	const [isInitialized, setIsInitialized] = useState(false);
 
 	const isMultipleAddresses = userAddresses.length > 1;
 
 	useEffect(() => {
+		const initialize = async () => {
+			const value = await fetchPrimeValue();
+			setPrimePrice(parseFloat(value));
+			setIsInitialized(true);
+		};
+
+		initialize();
+	}, []);
+
+	useEffect(() => {
+		if (!userData || !isInitialized) return;
+
 		const fetchEnsNames = async () => {
 			const promises = userAddresses.map(async (address) => {
 				try {
@@ -79,19 +92,10 @@ const Dashboard = ({
 		};
 
 		fetchEnsNames();
-	}, [userAddresses]);
+	}, [userAddresses, userData, isInitialized]);
 
 	useEffect(() => {
-		const getPrimeValue = async () => {
-			const value = await fetchPrimeValue();
-			setPrimePrice(parseFloat(value));
-		};
-
-		getPrimeValue();
-	}, []);
-
-	useEffect(() => {
-		if (!userData) return;
+		if (!userData || !isInitialized) return;
 		const tokens = (userData.percentage / 100) * stakingRewards;
 		setUserPrimeCached(userData.prime_amount_cached / 1_000_000_000_000_000_000);
 		setUserPercentage(userData.percentage.toPrecision(2));
@@ -105,7 +109,7 @@ const Dashboard = ({
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [userData, stakingRewards, fullyDiluitedValue, primePrice, userPrimeCached]);
+	}, [userData, stakingRewards, fullyDiluitedValue, primePrice, userPrimeCached, isInitialized]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));
@@ -116,7 +120,7 @@ const Dashboard = ({
 		return float > 0.01 ? float.toFixed(2) : float.toPrecision(2);
 	};
 
-	function getOrdinalSymbol(number: number | undefined) {
+	const getOrdinalSymbol = (number: number | undefined) => {
 		if (number === undefined) return '';
 
 		const j = number % 10,
@@ -125,7 +129,7 @@ const Dashboard = ({
 		if (j == 2 && k != 12) return "nd";
 		if (j == 3 && k != 13) return "rd";
 		return "th";
-	}
+	};
 
 	const getAddressText = () => {
 		return isMultipleAddresses ? "These addresses have" : "This address has";
@@ -145,7 +149,35 @@ const Dashboard = ({
 		});
 	};
 
-	const stackCards = [
+	const notFoundCard = {
+		title: <div>Address Not Found</div>,
+		content: (
+			<div className="text-sm md:text-base">
+				<div className="flex flex-col gap-2 md:gap-4">
+					<p>
+						This address was not found in the Wayfinder leaderboard. This could be due to:
+					</p>
+					<ul className="list-disc pl-6 space-y-1">
+						<li>Less than 24 hours have passed since the first cache</li>
+						<li>The address has not staked any $PRIME tokens</li>
+					</ul>
+					<p className="mt-4 text-judge-gray-400">
+						Please ensure you have cached your data and wait at least 24 hours for it to appear on the leaderboard.
+					</p>
+					<a
+						href="https://cache.wayfinder.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-gradient-transparent hover:opacity-80 transition-opacity mt-4 flex items-center gap-1 z-[60]"
+					>
+						Go to Wayfinder Cache <ArrowUpRightIcon className="w-5 h-5" />
+					</a>
+				</div>
+			</div>
+		),
+	};
+
+	const dataCards = [
 		{
 			title: (
 				<div>
@@ -329,10 +361,10 @@ const Dashboard = ({
 						}
 
 						const BADGE_IMAGES = {
-							ECHELON_GOVERNANCE: "wayfinder_assets/badges_webp/echelon_election_2.webp",
 							PRIME_BEFORE_UNLOCK: "wayfinder_assets/badges_webp/prime_pre_unlock.webp",
 							PRIME_UNLOCK_VOTE: "wayfinder_assets/badges_webp/staking_max.webp",
 							PRIME_HELD_1YEAR: "wayfinder_assets/badges_webp/prime_held_1year.webp",
+							ECHELON_GOVERNANCE: "wayfinder_assets/badges_webp/echelon_election_2.webp",
 							GOVERNANCE_VOTE_2: "wayfinder_assets/badges_webp/echelon_election_2.webp",
 							GOVERNANCE_VOTE_3: "wayfinder_assets/badges_webp/echelon_election_2.webp",
 							REFERRER_1: "wayfinder_assets/badges_webp/referred_1.webp",
@@ -424,24 +456,19 @@ const Dashboard = ({
 
 							// Check users referred
 							if (primaryBadges.users_referred > 0) {
-								let image = BADGE_IMAGES.REFERRER_1;
-								let badgeName = "Referrer";
+								const referralBadges = [
+									{ threshold: 50, image: BADGE_IMAGES.REFERRER_50, name: "50+ Referrals" },
+									{ threshold: 25, image: BADGE_IMAGES.REFERRER_25, name: "25+ Referrals" },
+									{ threshold: 10, image: BADGE_IMAGES.REFERRER_10, name: "10+ Referrals" },
+									{ threshold: 5, image: BADGE_IMAGES.REFERRER_5, name: "5+ Referrals" },
+									{ threshold: 1, image: BADGE_IMAGES.REFERRER_1, name: "1+ Referrals" }
+								];
 
-								if (primaryBadges.users_referred >= 50) {
-									image = BADGE_IMAGES.REFERRER_50;
-									badgeName = "50+ Referrals";
-								} else if (primaryBadges.users_referred >= 25) {
-									image = BADGE_IMAGES.REFERRER_25;
-									badgeName = "25+ Referrals";
-								} else if (primaryBadges.users_referred >= 10) {
-									image = BADGE_IMAGES.REFERRER_10;
-									badgeName = "10+ Referrals";
-								} else if (primaryBadges.users_referred >= 5) {
-									image = BADGE_IMAGES.REFERRER_5;
-									badgeName = "5+ Referrals";
-								}
-
-								addBadge(badgeName, displayAddress, 1, image);
+								referralBadges.forEach(badge => {
+									if (primaryBadges.users_referred >= badge.threshold) {
+										addBadge(badge.name, displayAddress, 1, badge.image);
+									}
+								});
 							}
 
 							// Check longest caching time
@@ -516,24 +543,19 @@ const Dashboard = ({
 
 							// Check users referred
 							if (badge.users_referred > 0) {
-								let image = BADGE_IMAGES.REFERRER_1;
-								let badgeName = "Referrer";
+								const referralBadges = [
+									{ threshold: 50, image: BADGE_IMAGES.REFERRER_50, name: "50+ Referrals" },
+									{ threshold: 25, image: BADGE_IMAGES.REFERRER_25, name: "25+ Referrals" },
+									{ threshold: 10, image: BADGE_IMAGES.REFERRER_10, name: "10+ Referrals" },
+									{ threshold: 5, image: BADGE_IMAGES.REFERRER_5, name: "5+ Referrals" },
+									{ threshold: 1, image: BADGE_IMAGES.REFERRER_1, name: "1+ Referrals" }
+								];
 
-								if (badge.users_referred >= 50) {
-									image = BADGE_IMAGES.REFERRER_50;
-									badgeName = "50+ Referrals";
-								} else if (badge.users_referred >= 25) {
-									image = BADGE_IMAGES.REFERRER_25;
-									badgeName = "25+ Referrals";
-								} else if (badge.users_referred >= 10) {
-									image = BADGE_IMAGES.REFERRER_10;
-									badgeName = "10+ Referrals";
-								} else if (badge.users_referred >= 5) {
-									image = BADGE_IMAGES.REFERRER_5;
-									badgeName = "5+ Referrals";
-								}
-
-								addBadge(badgeName, displayAddress, 1, image);
+								referralBadges.forEach(badgeConfig => {
+									if (badge.users_referred >= badgeConfig.threshold) {
+										addBadge(badgeConfig.name, displayAddress, 1, badgeConfig.image);
+									}
+								});
 							}
 
 							// Check longest caching time
@@ -633,18 +655,21 @@ const Dashboard = ({
 		},
 	];
 
+	if (!isInitialized) {
+		return (
+			<div className="flex justify-center items-center h-screen">
+				<Loader />
+			</div>
+		);
+	}
+
+	const stackCards = userData ? dataCards : [notFoundCard];
 
 	return (
 		<div>
-			{userData ? (
-				<div className="flex flex-col h-screen">
-					<CardStack cards={stackCards} />
-				</div>
-			) : (
-				<div className="flex justify-center items-center h-screen">
-					<Loader />
-				</div>
-			)}
+			<div className="flex flex-col h-screen">
+				<CardStack cards={stackCards} />
+			</div>
 		</div>
 	);
 };
