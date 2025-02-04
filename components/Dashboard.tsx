@@ -158,11 +158,11 @@ const Dashboard = ({
 						This address was not found in the Wayfinder leaderboard. This could be due to:
 					</p>
 					<ul className="list-disc pl-6 space-y-1">
-						<li>Less than 24 hours have passed since the first cache</li>
+						<li>Less than 24-48 hours have passed since the first cache</li>
 						<li>The address has not staked any $PRIME tokens</li>
 					</ul>
 					<p className="mt-4 text-judge-gray-400">
-						Please ensure you have cached your data and wait at least 24 hours for it to appear on the leaderboard.
+						Please ensure you have cached your data and wait at least 24-48 hours for it to appear on the leaderboard.
 					</p>
 					<a
 						href="https://cache.wayfinder.ai"

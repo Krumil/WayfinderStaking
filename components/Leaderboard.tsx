@@ -13,6 +13,7 @@ interface LeaderboardProps {
 	showOnlyFavorites: boolean;
 	onLoadMore: () => void;
 	isLoadingMore: boolean;
+	hasMore: boolean;
 }
 
 interface AddressItem {
@@ -196,7 +197,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 	addressToHighlight,
 	showOnlyFavorites,
 	onLoadMore,
-	isLoadingMore
+	isLoadingMore,
+	hasMore
 }) => {
 	const [allAddresses, setAllAddresses] = useState<AddressItem[]>([]);
 	const [favorites, setFavorites] = useState<string[]>([]);
@@ -318,7 +320,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
 			setIsNearBottom(nearBottom);
 
-			if (nearBottom && !isLoadingMore && !loadingRef.current) {
+			if (nearBottom && !isLoadingMore && !loadingRef.current && hasMore) {
 				loadingRef.current = true;
 				onLoadMore();
 				setTimeout(() => {
@@ -326,13 +328,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 				}, 1000);
 			}
 		}
-	}, [showOnlyFavorites, isLoadingMore, onLoadMore]);
+	}, [showOnlyFavorites, isLoadingMore, onLoadMore, hasMore]);
 
 	const totalItemCount = useMemo(() => {
 		const baseCount = filteredAddresses.length;
-		// Show skeleton items when near bottom OR when loading more
-		return (isNearBottom || isLoadingMore) && !showOnlyFavorites ? baseCount + 10 : baseCount;
-	}, [filteredAddresses.length, isLoadingMore, showOnlyFavorites, isNearBottom]);
+		// Show skeleton items when near bottom OR when loading more, but only if there's more data to load
+		return (isNearBottom || isLoadingMore) && !showOnlyFavorites && hasMore ? baseCount + 10 : baseCount;
+	}, [filteredAddresses.length, isLoadingMore, showOnlyFavorites, isNearBottom, hasMore]);
 
 	if (isInitialLoading) {
 		return (

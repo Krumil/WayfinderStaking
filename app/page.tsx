@@ -236,6 +236,7 @@ const Home = () => {
 							showOnlyFavorites={showOnlyFavorites}
 							onLoadMore={handleLoadMore}
 							isLoadingMore={loadingMore}
+							hasMore={hasMore}
 						/>
 					</FadeIn>
 				</div>

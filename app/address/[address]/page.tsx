@@ -68,17 +68,6 @@ const AddressPage = () => {
 
 		const fetchUserData = async () => {
 			setIsLoading(true);
-			// Check cache first
-			const cachedData = allAddressesData.find(item =>
-				item.address.toLowerCase() === address.address.toLowerCase()
-			);
-
-			if (cachedData) {
-				setUserData(cachedData.data);
-				setTotalUsers(allAddressesData.length);
-				setIsLoading(false);
-				return;
-			}
 
 			try {
 				const response = await fetch("/api/data/addresses", {
