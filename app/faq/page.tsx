@@ -18,7 +18,7 @@ export default function FAQPage() {
 				<AccordionItem value="faq-2">
 					<AccordionTrigger>How are $PROMPT allocations calculated?</AccordionTrigger>
 					<AccordionContent className="mt-2">
-						<p className="mx-2">When the dashboard shows &quot;X.XX% of the total score, which is XXX $PROMPT&quot;, this represents:</p>
+						<p className="mx-2">When the dashboard shows &ldquo;X.XX% of the total score, which is XXX $PROMPT&rdquo;, this represents:</p>
 						<ul className="list-disc ml-6 space-y-2">
 							<li>A snapshot calculation against the total 400M $PROMPT allocation</li>
 							<li>Based on current Community Score points distribution</li>
