@@ -51,7 +51,7 @@ export default function FAQPage() {
 							<li>Changes in the overall points distribution</li>
 						</ul>
 						<p className="mt-4 text-sm bg-gray-900/50 p-4 rounded-lg">
-							The dashboard takes regular snapshots of the current state. Since we can't predict future
+							The dashboard takes regular snapshots of the current state. Since we can&apos;t predict future
 							point accrual or changes in staking conditions, percentages are always relative to the
 							current total points, not final distribution.
 						</p>
