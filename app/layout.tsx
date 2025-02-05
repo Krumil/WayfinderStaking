@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/toaster";
-// import BuyMeACoffeeButton from "@/components/BuyMeACoffeButton";
 
 const inter = Oxanium({
 	weight: ["400", "500", "600", "700"],
@@ -67,7 +66,6 @@ export default function RootLayout({
 					<SpeedInsights />
 					<Analytics />
 				</div>
-				{/* <BuyMeACoffeeButton /> */}
 				<DisclaimerDialog />
 				<Toaster />
 			</body>
