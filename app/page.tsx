@@ -114,7 +114,7 @@ const Home = () => {
 			setAllAddressesData([]);
 			fetchAddressesData(1, false);
 		}
-	}, [showOnlyFavorites, fetchAddressesData]);
+	}, [showOnlyFavorites, fetchAddressesData, setAllAddressesData]);
 
 	const handleLoadMore = useCallback(() => {
 		if (!loadingMore && currentPage < totalPages && !showOnlyFavorites) {

@@ -11,7 +11,7 @@ export default function FAQPage() {
 						This is an unofficial community-created dashboard that helps track $PROMPT tokens, which can be obtained by staking $PRIME tokens at{' '}
 						<a href="https://cache.wayfinder.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
 							cache.wayfinder.ai
-						</a>. This dashboard is not affiliated with the official platform and uses its own methodology for calculations.
+						</a>. This dashboard isn&apos;t affiliated with the official platform and uses its own methodology for calculations.
 					</AccordionContent>
 				</AccordionItem>
 
@@ -80,8 +80,8 @@ export default function FAQPage() {
 						<p>While we strive for accuracy, our calculations:</p>
 						<ul className="list-disc ml-6 mt-2 space-y-2">
 							<li>Are based on current Community Score snapshots</li>
-							<li>Don't predict future point accrual</li>
-							<li>Don't include most badge modifiers (e.g., Avatars, Rank badges, Achievement badges)</li>
+							<li>Don&apos;t predict future point accrual</li>
+							<li>Don&apos;t include most badge modifiers (e.g., Avatars, Rank badges, Achievement badges)</li>
 							<li>Use simplified distribution assumptions</li>
 						</ul>
 						<div className="mt-4 bg-gray-900/50 p-4 rounded-lg text-sm space-y-2">
