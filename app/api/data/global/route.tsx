@@ -1,35 +1,27 @@
-import axios from "axios";
-import { NextRequest, NextResponse } from "next/server";
-import { getApiUrl } from "@/lib/utils";
+import { NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
 	try {
-		const apiUrl = getApiUrl("/get_global_data");
+		const response = await fetch('https://api.coingecko.com/api/v3/coins/echelon-prime');
+		const data = await response.json();
 
-		// Add a timestamp to the URL to prevent caching
-		const timestamp = new Date().getTime();
-		const urlWithTimestamp = `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}t=${timestamp}`;
+		const circulatingSupply = data.market_data?.circulating_supply || 1111111111;
 
-		const response = await axios.get(urlWithTimestamp, {
-			headers: {
-				'Cache-Control': 'no-cache, no-store, must-revalidate',
-				'Pragma': 'no-cache',
-				'Expires': '0'
+		return NextResponse.json({
+			circulatingSupply,
+			totalSupply: data.market_data?.total_supply,
+			maxSupply: data.market_data?.max_supply,
+			lastUpdated: data.market_data?.last_updated,
+			contracts: {
+				ethereum: data.platforms?.ethereum,
+				base: data.platforms?.base
 			}
 		});
-
-		const nextResponse = NextResponse.json(response.data);
-		nextResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-		nextResponse.headers.set('Pragma', 'no-cache');
-		nextResponse.headers.set('Expires', '0');
-
-		return nextResponse;
 	} catch (error) {
-		console.error("Error in API Route:", error);
-		console.log('API Route Handler Completed with Error');
-		return NextResponse.json(
-			{ error: "An error occurred while fetching data" },
-			{ status: 500 }
-		);
+		console.error('Error fetching global data:', error);
+		return NextResponse.json({
+			circulatingSupply: 1111111111,
+			error: 'Failed to fetch global data'
+		});
 	}
 }

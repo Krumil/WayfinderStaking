@@ -22,6 +22,13 @@ let primeContractBase: ethers.Contract;
 
 let ensCache: Record<string, string> = {};
 
+const getBaseUrl = () => {
+	if (process.env.NODE_ENV === 'development') {
+		return 'http://localhost:3000';
+	}
+	return process.env.NEXT_PUBLIC_API_URL || 'https://wayfinder-staking.vercel.app';
+};
+
 async function initializeContract() {
 	provider = new ethers.JsonRpcProvider(providerUrl);
 	providerBase = new ethers.JsonRpcProvider(providerUrlBase);
@@ -67,58 +74,75 @@ async function getPrimeBalance() {
 	return ethers.formatEther(balance + balanceBase);
 }
 
-async function fetchENSList() {
+async function getENSNameFromAddress(address: string, truncated = false) {
 	try {
-		if (Object.keys(ensCache).length === 0) {
-			const response = await axios.get('/api/data/ens');
-			ensCache = response.data;
+		const baseUrl = getBaseUrl();
+		const response = await fetch(`${baseUrl}/api/data/ens`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ address }),
+		});
+
+		if (!response.ok) {
+			throw new Error('Failed to fetch ENS name');
+		}
+
+		const data = await response.json();
+		const ensName = data.ens_name;
+
+		if (ensName) {
+			if (truncated && ensName.length > 20) {
+				return `${ensName.slice(0, isMobile ? 4 : 8)}...${ensName.slice(isMobile ? -4 : -8)}`;
+			}
+			return ensName;
+		} else if (truncated) {
+			const letters = isMobile ? 4 : 8;
+			return `${address.slice(0, letters)}...${address.slice(-letters)}`;
+		} else {
+			return address;
 		}
 	} catch (error) {
-		console.error("Error fetching ENS list:", error);
-	}
-}
-
-async function getENSNameFromAddress(address: string, truncated = false) {
-	if (!provider) {
-		await initializeContract();
-	}
-
-	const cachedENS = ensCache[address.toLowerCase()];
-	if (cachedENS) {
-		return cachedENS.length > 20 ? `${cachedENS.slice(0, isMobile ? 4 : 8)}...${cachedENS.slice(isMobile ? -4 : -8)}` : cachedENS;
-	}
-
-	const ens = await provider.lookupAddress(address);
-	if (ens) {
-		ensCache[address.toLowerCase()] = ens;
-		return ens.length > 20 ? `${ens.slice(0, isMobile ? 4 : 8)}...${ens.slice(isMobile ? -4 : -8)}` : ens;
-	} else if (truncated) {
-		const letters = isMobile ? 4 : 8;
-		return `${address.slice(0, letters)}...${address.slice(-letters)}`;
-	} else {
+		console.error('Error fetching ENS name:', error);
+		if (truncated) {
+			const letters = isMobile ? 4 : 8;
+			return `${address.slice(0, letters)}...${address.slice(-letters)}`;
+		}
 		return address;
 	}
 }
 
 async function getAddressFromENS(ensName: string, truncated = false) {
-	if (!provider) {
-		await initializeContract();
-	}
+	try {
+		const baseUrl = getBaseUrl();
+		const response = await fetch(`${baseUrl}/api/data/ens`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ ens: ensName }),
+		});
 
-	const resolver = await provider.getResolver(ensName);
-	if (!resolver) {
+		if (!response.ok) {
+			throw new Error('Failed to fetch address');
+		}
+
+		const data = await response.json();
+		const address = data.address;
+
+		if (!address) {
+			return null;
+		}
+
+		if (truncated) {
+			return `${address.slice(0, 4)}...${address.slice(-4)}`;
+		} else {
+			return address;
+		}
+	} catch (error) {
+		console.error('Error fetching address:', error);
 		return null;
-	}
-	const address = await resolver.getAddress();
-
-	if (!address) {
-		return null;
-	}
-
-	if (truncated) {
-		return `${address.slice(0, 4)}...${address.slice(-4)}`;
-	} else {
-		return address;
 	}
 }
 
@@ -236,5 +260,4 @@ export {
 	getENSNameFromAddress,
 	getAddressFromENS,
 	getInteractingAddresses,
-	fetchENSList,
 };

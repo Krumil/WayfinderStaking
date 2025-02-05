@@ -50,6 +50,12 @@ const isMobile = typeof window !== 'undefined'
 	? /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent)
 	: false;
 
+const truncateText = (text: string, isMobileView: boolean) => {
+	const maxLength = isMobileView ? 15 : 25;
+	if (text.length <= maxLength) return text;
+	return `${text.slice(0, maxLength)}...`;
+};
+
 export {
 	fetchPrimeValue,
 	formatNumberWithCommas,
@@ -58,4 +64,5 @@ export {
 	stakingRewards,
 	getOrdinalIndicator,
 	isMobile,
+	truncateText,
 };

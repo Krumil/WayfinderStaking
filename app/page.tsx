@@ -9,48 +9,54 @@ import Loader from "@/components/Loader/Loader";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Star } from "lucide-react";
 import { fetchPrimeValue } from "@/lib/utils";
-import { getPrimeBalance, fetchENSList } from "@/lib/contract";
-import { useAddressesStore } from "@/stores/addresses";
+import { getPrimeBalance } from "@/lib/contract";
+import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAddressSearch } from "@/hooks/useAddressSearch";
 
-const DEFAULT_PRIME_SUPPLY = 1111111111;
+const PAGE_SIZE = 10;
 
 const Home = () => {
 	const { allAddressesData, setAllAddressesData } = useAddressesStore();
 	const [highlightAddress, setHighlightAddress] = useState<string>("");
-	const [highlightKey, setHighlightKey] = useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
+	const [loadingMore, setLoadingMore] = useState<boolean>(false);
 	const [primeBalance, setPrimeBalance] = useState<number>(0);
-	const [primeSupply, setPrimeSupply] = useState<number>(DEFAULT_PRIME_SUPPLY);
+	const [primeSupply, setPrimeSupply] = useState<number>(0);
 	const [primeValue, setPrimeValue] = useState<number>(0);
 	const [showLeaderboard, setShowLeaderboard] = useState(false);
 	const [totalPercentageStaked, setTotalPercentageStaked] = useState<number>(0);
 	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
 	const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [hasMore, setHasMore] = useState<boolean>(true);
+	const [totalPages, setTotalPages] = useState<number>(1);
 	const leaderboardRef = useRef<HTMLDivElement>(null);
 
 	const router = useRouter();
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setShowLeaderboard(true);
-		}, 2500);
-
-		fetchENSList();
-		return () => clearTimeout(timer);
-	}, []);
-
 	const fetchPrimeBalance = useCallback(async () => {
 		try {
-			const balance = await getPrimeBalance();
-			setPrimeBalance(parseFloat(balance));
+			setPrimeBalance(0);
+			setPrimeSupply(0);
 
-			const response = await fetch("/api");
+			const [balance, response] = await Promise.all([
+				getPrimeBalance(),
+				fetch("/api/data/global")
+			]);
+
 			const data = await response.json();
-			setPrimeSupply(data.circulatingSupply);
+
+			// Only update both values when we have all the data
+			if (balance && data.circulatingSupply) {
+				setPrimeBalance(parseFloat(balance));
+				setPrimeSupply(data.circulatingSupply);
+			}
 		} catch (err: any) {
 			console.error(err);
+			setPrimeBalance(0);
+			setPrimeSupply(0);
 		}
 	}, []);
 
@@ -59,32 +65,70 @@ const Home = () => {
 		setPrimeValue(parseFloat(value));
 	}, []);
 
-	const fetchAddressesData = useCallback(async () => {
+	const fetchAddressesData = useCallback(async (page: number = 1, append: boolean = false) => {
 		try {
-			const response = await fetch("/api/data/addresses");
+			setLoadingMore(true);
+			const response = await fetch(`/api/data/addresses?page=${page}&pageSize=${PAGE_SIZE}`);
 			const data = await response.json();
-			setAllAddressesData(data);
+
+			if (append) {
+				setAllAddressesData(prev => [...prev, ...data.data] as AddressData[]);
+			} else {
+				setAllAddressesData(data.data as AddressData[]);
+			}
+
+			setTotalPages(data.total_pages);
+			setHasMore(page < data.total_pages);
 			setLoading(false);
+			setLoadingMore(false);
 		} catch (err) {
 			console.error("Error fetching addresses data:", err);
 			setLoading(false);
+			setLoadingMore(false);
 		}
 	}, [setAllAddressesData]);
 
 	useEffect(() => {
+		const timer = setTimeout(() => {
+			setShowLeaderboard(true);
+		}, 2500);
+
+		return () => clearTimeout(timer);
+	}, []);
+
+	// Initial data loading
+	useEffect(() => {
 		setLoading(true);
 		fetchPrimeBalance();
 		getPrimeValue();
-		if (allAddressesData.length === 0) {
-			fetchAddressesData();
+		fetchAddressesData(1, false);
+	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData]);
+
+	// Handle filter changes
+	useEffect(() => {
+		if (showOnlyFavorites) {
+			setCurrentPage(1);
+			setHasMore(false);
 		} else {
-			setLoading(false)
+			setCurrentPage(1);
+			setAllAddressesData([]);
+			fetchAddressesData(1, false);
 		}
-	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData, allAddressesData]);
+	}, [showOnlyFavorites, fetchAddressesData, setAllAddressesData]);
+
+	const handleLoadMore = useCallback(() => {
+		if (!loadingMore && currentPage < totalPages && !showOnlyFavorites) {
+			const nextPage = currentPage + 1;
+			setCurrentPage(nextPage);
+			fetchAddressesData(nextPage, true);
+		}
+	}, [currentPage, loadingMore, totalPages, fetchAddressesData, showOnlyFavorites]);
 
 	useEffect(() => {
-		const totalPercentageStaked = (primeBalance / primeSupply) * 100;
-		setTotalPercentageStaked(totalPercentageStaked);
+		if (primeSupply > 0) {
+			const totalPercentageStaked = (primeBalance / primeSupply) * 100;
+			setTotalPercentageStaked(totalPercentageStaked);
+		}
 	}, [primeBalance, primeSupply]);
 
 	useEffect(() => {
@@ -101,52 +145,69 @@ const Home = () => {
 		}
 	}, [router]);
 
-	const handleSearchPosition = useCallback((address: string) => {
-		setShowOnlyFavorites(false);
-		setTimeout(() => {
-			if (leaderboardRef.current) {
-				leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			}
-			setHighlightAddress(address);
-			setHighlightKey(prevKey => prevKey + 1);
-		}, 100);
-	}, []);
+	const { searchAddress } = useAddressSearch({
+		allAddressesData,
+		setAllAddressesData,
+		setHighlightAddress,
+		setCurrentPage,
+		setTotalPages,
+		setHasMore,
+		setLoading,
+		pageSize: PAGE_SIZE
+	});
 
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
 	}, []);
+
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
-			<div className="text-2xl md:text-3xl mt-[10vh] md:mt-[20vh] text-judge-gray-200">
-				<SlideUp delay={0.4}>
-					<p className="flex flex-col justify-center items-center md:flex-row ">
-						There are currently{" "}
-						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
-							<AnimatedNumber value={primeBalance} />
-						</span>{" "}
-						$PRIME staked
-						<span className="text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold ">
-							(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
-						</span>{" "}
-					</p>
+			<div className="flex flex-col items-center text-2xl md:text-3xl mt-[10vh] md:mt-[15vh] w-full text-judge-gray-200">
+				<SlideUp delay={0.1}>
+					<div className="flex flex-col items-center justify-center text-center w-full">
+						<SlideUp delay={0.2}>
+							<div className="text-center">There are currently</div>
+						</SlideUp>{" "}
+						<SlideUp delay={0.3}>
+							<div className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent text-center">
+								<AnimatedNumber value={primeBalance} />
+							</div>
+						</SlideUp>{" "}
+						<SlideUp delay={0.4}>
+							<div className="text-center">$PRIME staked</div>
+						</SlideUp>
+						<SlideUp delay={0.5}>
+							<div className="text-2xl md:text-3xl mx-2 text-gradient-transparent font-bold text-center">
+								(<AnimatedNumber value={totalStakedValueInUSD} /> $USD)
+							</div>
+						</SlideUp>
+					</div>
 				</SlideUp>
-				<SlideUp delay={0.8}>
-					<p className="flex flex-col justify-center items-center md:flex-row mt-6 mb-8">
-						This is about
-						<span className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent">
-							<AnimatedNumber value={totalPercentageStaked} precision={2} />%
-						</span>{" "}
-						of the total circulating supply
-					</p>
+				<SlideUp delay={1.1}>
+					<div className="flex flex-col items-center justify-center text-center w-full mt-6 mb-8">
+						<SlideUp delay={0.7}>
+							<div className="text-center">This is about</div>
+						</SlideUp>
+						<SlideUp delay={0.8}>
+							<div className="text-5xl font-bold md:text-6xl mx-2 text-gradient-transparent text-center">
+								<AnimatedNumber value={totalPercentageStaked} precision={2} />%
+							</div>
+						</SlideUp>
+						<SlideUp delay={0.9}>
+							<div className="text-center">of the total circulating supply</div>
+						</SlideUp>
+					</div>
 				</SlideUp>
-				<SlideUp delay={1.2}>
-					<AddressSearch
-						onAddressDetails={handleAddressDetails}
-						onSearchPosition={handleSearchPosition}
-					/>
+				<SlideUp delay={1.0}>
+					<div className="w-full flex justify-center">
+						<AddressSearch
+							onAddressDetails={handleAddressDetails}
+							onSearchPosition={searchAddress}
+						/>
+					</div>
 				</SlideUp>
-				<SlideUp delay={1.6}>
-					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2">
+				<SlideUp delay={1.1}>
+					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2 w-full">
 						<h2 className="text-2xl font-bold text-judge-gray-200">Leaderboard</h2>
 						<Star
 							className={`w-5 h-5 cursor-pointer transition-all duration-300 ease-in-out ${showOnlyFavorites
@@ -159,23 +220,26 @@ const Home = () => {
 				</SlideUp>
 			</div>
 			{loading && (
-				<FadeIn delay={1.8}>
+				<FadeIn delay={1.1}>
 					<div className="relative flex flex-col justify-center items-center text-md font-bold text-center mt-4 h-[200px]">
 						<Loader />
 					</div>
 				</FadeIn>
 			)}
-			{!loading && allAddressesData.length > 0 && showLeaderboard && (
-				<SlideUp>
-					<div ref={leaderboardRef} className="w-full">
+			{!loading && Array.isArray(allAddressesData) && allAddressesData.length > 0 && showLeaderboard && (
+				<div ref={leaderboardRef} className="w-full">
+					<FadeIn delay={1.1}>
+
 						<Leaderboard
 							addressesData={allAddressesData}
 							addressToHighlight={highlightAddress}
-							highlightKey={highlightKey}
 							showOnlyFavorites={showOnlyFavorites}
+							onLoadMore={handleLoadMore}
+							isLoadingMore={loadingMore}
+							hasMore={hasMore}
 						/>
-					</div>
-				</SlideUp>
+					</FadeIn>
+				</div>
 			)}
 		</div>
 	);
