@@ -42,13 +42,22 @@ const config: Config = {
 				}
 			},
 			animation: {
-				fade: "fadeIn .5s ease-in-out"
+				fade: "fadeIn .5s ease-in-out",
+				"accordion-down": "accordion-down 0.3s ease-out",
+				"accordion-up": "accordion-up 0.3s ease-out"
 			},
-
 			keyframes: {
 				fadeIn: {
 					from: { opacity: "0" },
 					to: { opacity: "1" }
+				},
+				"accordion-down": {
+					from: { height: "0" },
+					to: { height: "var(--radix-accordion-content-height)" }
+				},
+				"accordion-up": {
+					from: { height: "var(--radix-accordion-content-height)" },
+					to: { height: "0" }
 				}
 			},
 			animationDuration: {

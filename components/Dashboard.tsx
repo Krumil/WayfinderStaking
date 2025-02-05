@@ -218,7 +218,7 @@ const Dashboard = ({
 						href={`https://cache.wayfinder.ai/cache/account/${userAddresses[0]}`}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="text-xs text-gradient-transparent hover:opacity-80 transition-opacity mt-1 flex items-center gap-1 z-[60] relative mb-16 md:mb-12"
+						className="text-xs text-gradient-transparent hover:opacity-80 transition-opacity mt-1 flex items-center gap-1 z-[60] relative mb-10 md:mb-12"
 						onClick={(e) => e.stopPropagation()}
 					>
 						Check account on Wayfinder <ArrowUpRightIcon className="w-4 h-4" />
