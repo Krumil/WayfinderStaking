@@ -4,7 +4,7 @@ import { getApiUrl } from "@/lib/utils";
 
 export async function GET() {
 	try {
-		const apiUrl = getApiUrl("/ens");
+		const apiUrl = getApiUrl("/ens", true);
 		const response = await axios.get(apiUrl);
 		return NextResponse.json(response.data);
 	} catch (error) {
@@ -23,9 +23,9 @@ export async function POST(request: Request) {
 
 		let apiUrl;
 		if (address) {
-			apiUrl = getApiUrl(`/ens/${address}`);
+			apiUrl = getApiUrl(`/ens/${address}`, true);
 		} else if (ens) {
-			apiUrl = getApiUrl(`/ens/reverse/${ens}`);
+			apiUrl = getApiUrl(`/ens/reverse/${ens}`, true);
 		} else {
 			return NextResponse.json({ error: "Missing address or ENS" }, { status: 400 });
 		}

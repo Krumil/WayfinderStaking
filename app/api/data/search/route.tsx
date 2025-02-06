@@ -11,9 +11,9 @@ export async function GET(request: NextRequest) {
 			return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
 		}
 
-		const apiUrl = getApiUrl(`/search_position?query=${query}`);
+		const apiUrl = getApiUrl(`/search_position?query=${query}`, true);
 		const response = await axios.get(apiUrl);
-		return NextResponse.json(response.data);
+
 	} catch (error: any) {
 		console.error("Error searching address:", error);
 		if (error.response?.status === 404) {

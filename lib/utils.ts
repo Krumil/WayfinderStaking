@@ -38,12 +38,20 @@ const fetchPrimeValue = async () => {
 };
 
 
-const getApiUrl = (endpoint: string) => {
-	const apiUrl = process.env.NEXT_PUBLIC_ADDRESSES_API_URL + endpoint;
-	if (!apiUrl) {
-		throw new Error("NEXT_PUBLIC_ADDRESSES_API_URL is not defined");
+const getApiUrl = (endpoint: string, isBackend: boolean = false) => {
+	if (isBackend) {
+		// For backend (middleware) calls
+		const backendUrl = process.env.BACKEND_API_URL;
+		if (!backendUrl) {
+			throw new Error("BACKEND_API_URL is not defined");
+		}
+		return `${backendUrl}${endpoint}`;
 	}
-	return apiUrl;
+	// For frontend calls, use relative URL
+	const port = process.env.NEXT_PUBLIC_PORT || '3000';
+	return process.env.NODE_ENV === 'development'
+		? `http://localhost:${port}/api${endpoint}`
+		: `/api${endpoint}`;
 };
 
 const isMobile = typeof window !== 'undefined'
