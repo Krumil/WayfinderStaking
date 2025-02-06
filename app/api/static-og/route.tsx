@@ -4,9 +4,14 @@ export const runtime = 'edge'
 
 export async function GET() {
 	try {
-		// Use NEXT_PUBLIC_URL if set, otherwise fallback to deployment URL or localhost
+		// Ensure we always have the correct production URL
 		const baseUrl = process.env.NEXT_PUBLIC_URL ||
-			(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+			(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+				(process.env.VERCEL_ENV === 'production' ? 'https://wayfinder-staking.vercel.app' : 'http://localhost:3000'));
+
+		// Add cache headers
+		const headers = new Headers();
+		headers.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
 
 		return new ImageResponse(
 			(
@@ -87,6 +92,7 @@ export async function GET() {
 			{
 				width: 1200,
 				height: 630,
+				headers,
 			}
 		)
 	} catch (e) {
