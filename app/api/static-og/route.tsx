@@ -4,6 +4,10 @@ export const runtime = 'edge'
 
 export async function GET() {
 	try {
+		// Use NEXT_PUBLIC_URL if set, otherwise fallback to deployment URL or localhost
+		const baseUrl = process.env.NEXT_PUBLIC_URL ||
+			(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
 		return new ImageResponse(
 			(
 				<div
@@ -15,7 +19,7 @@ export async function GET() {
 						alignItems: 'center',
 						justifyContent: 'center',
 						backgroundColor: '#030711',
-						backgroundImage: `url(${process.env.VERCEL_URL || 'http://localhost:3000'}/assets/bg-small.png)`,
+						backgroundImage: `url(${baseUrl}/assets/bg-small.png)`,
 						backgroundSize: 'cover',
 						backgroundPosition: 'center',
 					}}
@@ -31,7 +35,7 @@ export async function GET() {
 					>
 						{/* Logo */}
 						<img
-							src={`${process.env.VERCEL_URL || 'http://localhost:3000'}/assets/wayfinder.svg`}
+							src={`${baseUrl}/assets/wayfinder.svg`}
 							alt="Wayfinder Logo"
 							width="120"
 							height="120"
@@ -44,6 +48,7 @@ export async function GET() {
 								fontSize: 60,
 								fontWeight: 'bold',
 								background: 'linear-gradient(to right, #d2d2b6, #7f754f)',
+
 								backgroundClip: 'text',
 								color: 'transparent',
 								letterSpacing: '-0.02em',
@@ -62,7 +67,7 @@ export async function GET() {
 							}}
 						>
 							<img
-								src={`${process.env.VERCEL_URL || 'http://localhost:3000'}/assets/x-logo.png`}
+								src={`${baseUrl}/assets/x-logo.png`}
 								alt="Twitter Logo"
 								width="32"
 								height="32"
@@ -85,6 +90,7 @@ export async function GET() {
 			}
 		)
 	} catch (e) {
+		console.error('Failed to generate OG image:', e);
 		return new Response(`Failed to generate image`, {
 			status: 500,
 		})
