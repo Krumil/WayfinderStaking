@@ -27,7 +27,7 @@ export default function FAQPage() {
 						<div className="mt-4 bg-gray-900/50 p-4 rounded-lg space-y-2">
 							<p className="font-medium">Important notes about the calculation:</p>
 							<ul className="list-disc ml-6 space-y-1 text-sm">
-								<li>We don&apos;t predict future point accrual until TGE (June 2027)</li>
+								<li>We don&apos;t predict future point accrual until TGE</li>
 								<li>The actual distribution mechanism is unknown (linear/non-linear)</li>
 								<li>New stakers can join and affect the distribution at any time</li>
 								<li>Points allocation timing and updates are not public information</li>

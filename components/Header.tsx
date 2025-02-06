@@ -151,10 +151,11 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 			</div>
 			<div className="relative flex-1 text-center hidden md:flex md:justify-center">
 				<h1 className="text-lg mt-2 font-bold uppercase">
-					Wayfinder Staking Dashboard
+					Wayfinder Staking Leaderboard
 				</h1>
 			</div>
 			<div className="flex items-center justify-end gap-4 w-1/3">
+
 				{!isMobile && isInstallable && (
 					<Button
 						onClick={handleInstall}
