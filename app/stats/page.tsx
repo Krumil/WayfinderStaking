@@ -1,6 +1,11 @@
-// "use client";
+"use client";
+
+export default function StatsPage() {
+	return <div>Stats</div>;
+}
 
 // import { useQuery } from '@tanstack/react-query';
+
 // import {
 // 	AreaChart,
 // 	Area,
