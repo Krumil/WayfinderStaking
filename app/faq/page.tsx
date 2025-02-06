@@ -2,7 +2,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export default function FAQPage() {
 	return (
-		<div className="container mx-auto px-4 py-8 mt-20">
+		<div className="container mx-auto px-4 py-8 mt-20 max-w-5xl">
 			<h1 className="text-3xl font-bold mb-8">Frequently Asked Questions</h1>
 			<Accordion type="single" collapsible className="space-y-4">
 				<AccordionItem value="faq-1">
@@ -27,7 +27,7 @@ export default function FAQPage() {
 						<div className="mt-4 bg-gray-900/50 p-4 rounded-lg space-y-2">
 							<p className="font-medium">Important notes about the calculation:</p>
 							<ul className="list-disc ml-6 space-y-1 text-sm">
-								<li>We don&apos;t predict future point accrual until TGE (June 2027)</li>
+								<li>We don&apos;t predict future point accrual until TGE</li>
 								<li>The actual distribution mechanism is unknown (linear/non-linear)</li>
 								<li>New stakers can join and affect the distribution at any time</li>
 								<li>Points allocation timing and updates are not public information</li>
