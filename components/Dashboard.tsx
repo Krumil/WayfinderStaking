@@ -97,7 +97,7 @@ const Dashboard = ({
 	useEffect(() => {
 		if (!userData || !isInitialized) return;
 		const tokens = (userData.percentage / 100) * stakingRewards;
-		setUserPrimeCached(userData.prime_amount_cached / 1_000_000_000_000_000_000);
+		setUserPrimeCached(((userData.prime_amount_cached || 0) + (userData.base_prime_amount_cached || 0)) / 1_000_000_000_000_000_000);
 		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
 
@@ -350,7 +350,7 @@ const Dashboard = ({
 			content: (
 				<div className="text-base">
 					{(() => {
-						if (!userData?.extra?.secondary_address_badges) {
+						if (!userData?.extra?.secondary_address_badges && !userData?.extra?.primary_address_badge_data) {
 							return <div className="text-center text-judge-gray-400">No badges found</div>;
 						}
 
@@ -478,144 +478,147 @@ const Dashboard = ({
 						}
 
 						// Handle secondary address badges
-						userData.extra.secondary_address_badges.forEach((badge, addressIndex) => {
-							// Skip the first entry (index 0) as it's already handled by primary_address_badge_data
-							if (addressIndex === 0) return;
+						if (userData?.extra?.secondary_address_badges) {
+							userData.extra.secondary_address_badges.forEach((badge, addressIndex) => {
+								// Skip the first entry as it's already handled by primary_address_badge_data
+								if (addressIndex === 0) return;
 
-							const address = userData?.secondary_addresses?.[addressIndex - 1] || '';
-							const addressData = addressList.find(a => a.address.toLowerCase() === address.toLowerCase());
-							const displayAddress = addressData?.ensName || address;
 
-							// Check governance participation
-							if (badge.echelon_governance_participation > 0) {
-								addBadge("Echelon Governance", displayAddress, 1, BADGE_IMAGES.ECHELON_GOVERNANCE);
-							}
+								const address = userData?.secondary_addresses?.[addressIndex - 1] || '';
+								const addressData = addressList.find(a => a.address.toLowerCase() === address.toLowerCase());
+								const displayAddress = addressData?.ensName || address;
 
-							// Check Prime before unlock
-							if (badge.held_prime_before_unlock) {
-								addBadge("Prime Before Unlock", displayAddress, 1, BADGE_IMAGES.PRIME_BEFORE_UNLOCK);
-							}
-
-							// Check Prime unlock vote
-							if (badge.participated_in_prime_unlock_vote) {
-								addBadge("Prime Unlock Vote", displayAddress, 1, BADGE_IMAGES.PRIME_UNLOCK_VOTE);
-							}
-
-							// Check Prime held duration
-							if (badge.prime_held_duration > 0) {
-								const days = Math.floor(badge.prime_held_duration / 86400);
-								let image = BADGE_IMAGES.STAKING_30DAYS;
-								let badgeName = "30 Days";
-
-								if (days >= 900) {
-									image = BADGE_IMAGES.STAKING_2_5YEAR;
-									badgeName = "900 Days";
-								} else if (days >= 720) {
-									image = BADGE_IMAGES.STAKING_2YEAR;
-									badgeName = "720 Days";
-								} else if (days >= 540) {
-									image = BADGE_IMAGES.STAKING_1_5YEAR;
-									badgeName = "540 Days";
-								} else if (days >= 360) {
-									image = BADGE_IMAGES.STAKING_1YEAR;
-									badgeName = "360 Days";
-								} else if (days >= 180) {
-									image = BADGE_IMAGES.STAKING_6MON;
-									badgeName = "180 Days";
-								} else if (days >= 90) {
-									image = BADGE_IMAGES.STAKING_90DAYS;
-									badgeName = "90 Days";
-								} else if (days >= 30) {
-									image = BADGE_IMAGES.STAKING_30DAYS;
-									badgeName = "30 Days";
+								// Check governance participation
+								if (badge.echelon_governance_participation > 0) {
+									addBadge("Echelon Governance", displayAddress, 1, BADGE_IMAGES.ECHELON_GOVERNANCE);
 								}
 
-								addBadge(badgeName, displayAddress, badge.total_prime_multiplier, image);
-							}
+								// Check Prime before unlock
+								if (badge.held_prime_before_unlock) {
+									addBadge("Prime Before Unlock", displayAddress, 1, BADGE_IMAGES.PRIME_BEFORE_UNLOCK);
+								}
 
-							// Check governance votes
-							if (badge.governance_vote_2) {
-								addBadge("Governance Vote 2", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_2);
-							}
-							if (badge.governance_vote_3) {
-								addBadge("Governance Vote 3", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_3);
-							}
+								// Check Prime unlock vote
+								if (badge.participated_in_prime_unlock_vote) {
+									addBadge("Prime Unlock Vote", displayAddress, 1, BADGE_IMAGES.PRIME_UNLOCK_VOTE);
+								}
 
-							// Check users referred
-							if (badge.users_referred > 0) {
-								const referralBadges = [
-									{ threshold: 50, image: BADGE_IMAGES.REFERRER_50, name: "50+ Referrals" },
-									{ threshold: 25, image: BADGE_IMAGES.REFERRER_25, name: "25+ Referrals" },
-									{ threshold: 10, image: BADGE_IMAGES.REFERRER_10, name: "10+ Referrals" },
-									{ threshold: 5, image: BADGE_IMAGES.REFERRER_5, name: "5+ Referrals" },
-									{ threshold: 1, image: BADGE_IMAGES.REFERRER_1, name: "1+ Referrals" }
-								];
+								// Check Prime held duration
+								if (badge.prime_held_duration > 0) {
+									const days = Math.floor(badge.prime_held_duration / 86400);
+									let image = BADGE_IMAGES.STAKING_30DAYS;
+									let badgeName = "30 Days";
 
-								referralBadges.forEach(badgeConfig => {
-									if (badge.users_referred >= badgeConfig.threshold) {
-										addBadge(badgeConfig.name, displayAddress, 1, badgeConfig.image);
+									if (days >= 900) {
+										image = BADGE_IMAGES.STAKING_2_5YEAR;
+										badgeName = "900 Days";
+									} else if (days >= 720) {
+										image = BADGE_IMAGES.STAKING_2YEAR;
+										badgeName = "720 Days";
+									} else if (days >= 540) {
+										image = BADGE_IMAGES.STAKING_1_5YEAR;
+										badgeName = "540 Days";
+									} else if (days >= 360) {
+										image = BADGE_IMAGES.STAKING_1YEAR;
+										badgeName = "360 Days";
+									} else if (days >= 180) {
+										image = BADGE_IMAGES.STAKING_6MON;
+										badgeName = "180 Days";
+									} else if (days >= 90) {
+										image = BADGE_IMAGES.STAKING_90DAYS;
+										badgeName = "90 Days";
+									} else if (days >= 30) {
+										image = BADGE_IMAGES.STAKING_30DAYS;
+										badgeName = "30 Days";
 									}
-								});
+
+									addBadge(badgeName, displayAddress, badge.total_prime_multiplier, image);
+								}
+
+								// Check governance votes
+								if (badge.governance_vote_2) {
+									addBadge("Governance Vote 2", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_2);
+								}
+								if (badge.governance_vote_3) {
+									addBadge("Governance Vote 3", displayAddress, 1, BADGE_IMAGES.GOVERNANCE_VOTE_3);
+								}
+
+								// Check users referred
+								if (badge.users_referred > 0) {
+									const referralBadges = [
+										{ threshold: 50, image: BADGE_IMAGES.REFERRER_50, name: "50+ Referrals" },
+										{ threshold: 25, image: BADGE_IMAGES.REFERRER_25, name: "25+ Referrals" },
+										{ threshold: 10, image: BADGE_IMAGES.REFERRER_10, name: "10+ Referrals" },
+										{ threshold: 5, image: BADGE_IMAGES.REFERRER_5, name: "5+ Referrals" },
+										{ threshold: 1, image: BADGE_IMAGES.REFERRER_1, name: "1+ Referrals" }
+									];
+
+									referralBadges.forEach(badgeConfig => {
+										if (badge.users_referred >= badgeConfig.threshold) {
+											addBadge(badgeConfig.name, displayAddress, 1, badgeConfig.image);
+										}
+									});
+								}
+
+								// Check longest caching time
+								if (badge.longest_caching_time >= 365) {
+									addBadge("1 Year Cache", displayAddress, badge.total_prime_multiplier, BADGE_IMAGES.PRIME_HELD_1YEAR);
+								}
+							});
+
+							if (Object.keys(badges).length === 0) {
+								return <div className="text-center text-judge-gray-400">No badges found</div>;
 							}
 
-							// Check longest caching time
-							if (badge.longest_caching_time >= 365) {
-								addBadge("1 Year Cache", displayAddress, badge.total_prime_multiplier, BADGE_IMAGES.PRIME_HELD_1YEAR);
-							}
-						});
-
-						if (Object.keys(badges).length === 0) {
-							return <div className="text-center text-judge-gray-400">No badges found</div>;
-						}
-
-						return (
-							<div className="flex flex-col gap-2 md:gap-4">
-								<div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
-									{Object.values(badges).map((badge) => (
-										<div
-											key={badge.name}
-											className={`p-1.5 rounded-lg bg-judge-gray-800/20 cursor-pointer transition-colors z-[60] ${selectedBadge === badge.name ? 'bg-judge-gray-800/40 ring-1 ring-judge-gray-400/20' : 'hover:bg-judge-gray-800/30'}`}
-											onClick={() => setSelectedBadge(badge.name)}
-										>
-											<div className="flex flex-col items-center text-center">
-												<div className="w-8 h-8">
-													<img
-														src={`https://staticfiles.wayfinder.ai/${badge.image}`}
-														alt={badge.name}
-														width={32}
-														height={32}
-														className="w-full h-full object-contain"
-													/>
+							return (
+								<div className="flex flex-col gap-2 md:gap-4">
+									<div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+										{Object.values(badges).map((badge) => (
+											<div
+												key={badge.name}
+												className={`p-1.5 rounded-lg bg-judge-gray-800/20 cursor-pointer transition-colors z-[60] ${selectedBadge === badge.name ? 'bg-judge-gray-800/40 ring-1 ring-judge-gray-400/20' : 'hover:bg-judge-gray-800/30'}`}
+												onClick={() => setSelectedBadge(badge.name)}
+											>
+												<div className="flex flex-col items-center text-center">
+													<div className="w-8 h-8">
+														<img
+															src={`https://staticfiles.wayfinder.ai/${badge.image}`}
+															alt={badge.name}
+															width={32}
+															height={32}
+															className="w-full h-full object-contain"
+														/>
+													</div>
 												</div>
 											</div>
-										</div>
-									))}
-								</div>
-								<div className="h-px bg-judge-gray-800/20" />
-								<div className="w-full">
-									<div className="text-sm font-medium text-gradient-transparent mb-2">
-										{selectedBadge || 'Select a badge'}
+										))}
 									</div>
-									{selectedBadge && badges[selectedBadge] && (
-										<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-											{badges[selectedBadge].addresses.map((addr) => (
-												<div
-													key={addr.address}
-													className="text-[10px] leading-[14px] text-white p-1 rounded bg-judge-gray-800/10 truncate"
-												>
-													{addr.address}
-													{addr.multiplier !== 1 && (
-														<span className="ml-1 text-[8px] text-judge-gray-500">
-															({addr.multiplier}x)
-														</span>
-													)}
-												</div>
-											))}
+									<div className="h-px bg-judge-gray-800/20" />
+									<div className="w-full">
+										<div className="text-sm font-medium text-gradient-transparent mb-2">
+											{selectedBadge || 'Select a badge'}
 										</div>
-									)}
+										{selectedBadge && badges[selectedBadge] && (
+											<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+												{badges[selectedBadge].addresses.map((addr) => (
+													<div
+														key={addr.address}
+														className="text-[10px] leading-[14px] text-white p-1 rounded bg-judge-gray-800/10 truncate"
+													>
+														{addr.address}
+														{addr.multiplier !== 1 && (
+															<span className="ml-1 text-[8px] text-judge-gray-500">
+																({addr.multiplier}x)
+															</span>
+														)}
+													</div>
+												))}
+											</div>
+										)}
+									</div>
 								</div>
-							</div>
-						);
+							);
+						}
 					})()}
 				</div>
 			),

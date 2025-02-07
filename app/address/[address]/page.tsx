@@ -7,7 +7,7 @@ import { stakingRewards } from "@/lib/utils";
 import { getAddressFromENS, getENSNameFromAddress } from "@/lib/contract";
 import { useParams } from "next/navigation";
 import { useAddressesStore } from "@/stores/addresses";
-import type { UserData, SecondaryAddressBadge } from "@/types/global";
+import type { UserData } from "@/types/global";
 
 interface Address {
 	address: string;
