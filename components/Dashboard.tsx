@@ -345,7 +345,7 @@ const Dashboard = ({
 				</div>
 			),
 		},
-		{
+		/* {
 			title: <div>Badges</div>,
 			content: (
 				<div className="text-base">
@@ -622,7 +622,7 @@ const Dashboard = ({
 					})()}
 				</div>
 			),
-		},
+		}, */
 		{
 			title: <div>Linked Addresses</div>,
 			content: (
