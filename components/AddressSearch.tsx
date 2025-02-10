@@ -64,7 +64,6 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
 						onClick={handleAddressDetails}
 					/>
 				</div>
-				<Notification title="New!" subtitle="You can now search for multiple addresses separated by commas" />
 				<div className="flex justify-center mt-2 space-x-4 w-full">
 					<Button
 						onClick={handleAddressDetails}
