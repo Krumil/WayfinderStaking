@@ -29,7 +29,7 @@ interface BundleItem {
 
 const calculateTotalScoreMultipleAddresses = (addressesData: any) => {
 	const totalScore = addressesData.reduce((acc: number, curr: any) => {
-		const mergedScores = curr.data.merged_score_data || {
+		const mergedScores = curr.data.merged_boosted_referred_score_data || {
 			prime_score: 0,
 			community_score: 0,
 			initialization_score: 0
@@ -72,7 +72,11 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 				className="group relative block"
 				onClick={e => isSkeletonItem && e.preventDefault()}
 			>
-				<div className={containerStyles} data-address={isSkeletonItem ? '' : addresses[index].address}>
+				<div 
+					className={containerStyles} 
+					data-address={isSkeletonItem ? '' : addresses[index].address}
+					id={isSkeletonItem ? '' : `address-${addresses[index].address}`}
+				>
 					{isSkeletonItem ? (
 						// Skeleton content without motion wrapper
 						<div className="flex flex-row items-center">
@@ -119,9 +123,9 @@ const AddressListItem = React.memo(({ index, style, data }: any) => {
 							<div className="flex flex-col items-end">
 								<div className="text-end text-lg md:text-xl font-bold text-gradient-transparent">
 									{formatNumberWithCommas(
-										(addresses[index].data.merged_score_data?.prime_score || 0) +
-										(addresses[index].data.merged_score_data?.community_score || 0) +
-										(addresses[index].data.merged_score_data?.initialization_score || 0)
+										(addresses[index].data.merged_boosted_referred_score_data?.prime_score || 0) +
+										(addresses[index].data.merged_boosted_referred_score_data?.community_score || 0) +
+										(addresses[index].data.merged_boosted_referred_score_data?.initialization_score || 0)
 									)}{!isMobile && " CS"}
 								</div>
 								{addresses[index].prime_amount_cached && (
@@ -274,10 +278,18 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 			if (index !== -1) {
 				setActiveHighlight(addressToHighlight);
 
+				// Try both scrolling methods for better reliability
 				const scrollToHighlightedAddress = () => {
+					// Method 1: Use the virtualized list's scrollToItem method
 					if (listRef.current) {
 						listRef.current.scrollToItem(index, "center");
-					} else {
+					}
+					
+					// Method 2: Let the parent component handle scrolling via the ID
+					// This is handled in the page.tsx component
+					
+					// Retry if listRef is not available yet
+					if (!listRef.current) {
 						setTimeout(scrollToHighlightedAddress, 100);
 					}
 				};

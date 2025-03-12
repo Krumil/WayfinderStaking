@@ -34,7 +34,6 @@ const AddressPage = () => {
 	const [fetchedAddress, setFetchedAddress] = useState<boolean>(false);
 	const [userData, setUserData] = useState<UserData | null>(null);
 	const [totalUsers, setTotalUsers] = useState<number>(0);
-	const [secondaryAddressList, setSecondaryAddressList] = useState<Address[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const { allAddressesData } = useAddressesStore();
 
@@ -97,35 +96,6 @@ const AddressPage = () => {
 		fetchUserData();
 	}, [address, allAddressesData]);
 
-	useEffect(() => {
-		if (!userData?.secondary_addresses) return;
-
-		const fetchSecondaryENS = async () => {
-			const addressList = await Promise.all(
-				userData.secondary_addresses.map(async (addr) => {
-					try {
-						const response = await fetch('/api/data/ens', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ address: addr }),
-						});
-						const data = await response.json();
-						return {
-							address: addr,
-							ensName: data.ens_name || null,
-						};
-					} catch (error) {
-						console.error('Error fetching ENS:', error);
-						return { address: addr, ensName: null };
-					}
-				})
-			);
-			setSecondaryAddressList(addressList);
-		};
-
-		fetchSecondaryENS();
-	}, [userData?.secondary_addresses]);
-
 	if (!fetchedAddress || isLoading) {
 		return (
 			<div className="flex justify-center items-center h-screen">
@@ -151,7 +121,7 @@ const AddressPage = () => {
 				userAddresses={[address.address]}
 				userData={userData}
 				stakingRewards={stakingRewards}
-				addressList={[address, ...secondaryAddressList]}
+				addressList={[address]}
 				totalUsers={totalUsers}
 			/>
 		</div>

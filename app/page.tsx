@@ -14,127 +14,97 @@ import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAddressSearch } from "@/hooks/useAddressSearch";
+import useSWR from 'swr';
 
 const PAGE_SIZE = 10;
+
+// Fetcher functions
+const fetcherWithBalance = async () => {
+	const [balance, response] = await Promise.all([
+		getPrimeBalance(),
+		fetch("/api/data/global")
+	]);
+	const data = await response.json();
+	return {
+		balance: balance ? parseFloat(balance) : 0,
+		circulatingSupply: data.circulatingSupply || 0
+	};
+};
+
+const fetcherPrimeValue = async () => {
+	const value = await fetchPrimeValue();
+	return parseFloat(value);
+};
+
+const fetcherAddresses = async (url: string) => {
+	const response = await fetch(url);
+	const data = await response.json();
+	return data;
+};
 
 const Home = () => {
 	const { allAddressesData, setAllAddressesData } = useAddressesStore();
 	const [highlightAddress, setHighlightAddress] = useState<string>("");
-	const [loading, setLoading] = useState<boolean>(true);
-	const [loadingMore, setLoadingMore] = useState<boolean>(false);
-	const [primeBalance, setPrimeBalance] = useState<number>(0);
-	const [primeSupply, setPrimeSupply] = useState<number>(0);
-	const [primeValue, setPrimeValue] = useState<number>(0);
 	const [showLeaderboard, setShowLeaderboard] = useState(false);
-	const [totalPercentageStaked, setTotalPercentageStaked] = useState<number>(0);
-	const [totalStakedValueInUSD, setTotalStakedValueInUSD] = useState<number>(0);
-	const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 	const [currentPage, setCurrentPage] = useState<number>(1);
-	const [hasMore, setHasMore] = useState<boolean>(true);
 	const [totalPages, setTotalPages] = useState<number>(1);
+	const [hasMore, setHasMore] = useState<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 	const leaderboardRef = useRef<HTMLDivElement>(null);
 
 	const router = useRouter();
 
-	const fetchPrimeBalance = useCallback(async () => {
-		try {
-			setPrimeBalance(0);
-			setPrimeSupply(0);
+	// SWR hooks for data fetching
+	const { data: primeData, error: primeError } = useSWR('prime-balance', fetcherWithBalance);
+	const { data: primeValue, error: valueError } = useSWR('prime-value', fetcherPrimeValue);
+	const { data: addressesData, error: addressesError } = useSWR(
+		showOnlyFavorites ? null : `/api/data/addresses?page=${currentPage}&pageSize=${PAGE_SIZE}`,
+		fetcherAddresses
+	);
 
-			const [balance, response] = await Promise.all([
-				getPrimeBalance(),
-				fetch("/api/data/global")
-			]);
+	// Derived states
+	const loading = !primeData || !primeValue || (!addressesData && !showOnlyFavorites) || isLoading;
+	const loadingMore = false; // SWR handles loading states
+	const hasMoreData = addressesData ? currentPage < addressesData.total_pages : hasMore;
+	const primeBalance = primeData?.balance || 0;
+	const primeSupply = primeData?.circulatingSupply || 0;
+	const totalPercentageStaked = primeSupply > 0 ? (primeBalance / primeSupply) * 100 : 0;
+	const totalStakedValueInUSD = primeBalance * (primeValue || 0);
 
-			const data = await response.json();
-
-			// Only update both values when we have all the data
-			if (balance && data.circulatingSupply) {
-				setPrimeBalance(parseFloat(balance));
-				setPrimeSupply(data.circulatingSupply);
-			}
-		} catch (err: any) {
-			console.error(err);
-			setPrimeBalance(0);
-			setPrimeSupply(0);
-		}
-	}, []);
-
-	const getPrimeValue = useCallback(async () => {
-		const value = await fetchPrimeValue();
-		setPrimeValue(parseFloat(value));
-	}, []);
-
-	const fetchAddressesData = useCallback(async (page: number = 1, append: boolean = false) => {
-		try {
-			setLoadingMore(true);
-			const response = await fetch(`/api/data/addresses?page=${page}&pageSize=${PAGE_SIZE}`);
-			const data = await response.json();
-
-			if (append) {
-				setAllAddressesData(prev => [...prev, ...data.data] as AddressData[]);
+	// Update addresses store when data changes
+	useEffect(() => {
+		if (addressesData?.data) {
+			if (currentPage === 1) {
+				setAllAddressesData(addressesData.data);
 			} else {
-				setAllAddressesData(data.data as AddressData[]);
+				setAllAddressesData(prev => [...prev, ...addressesData.data]);
 			}
-
-			setTotalPages(data.total_pages);
-			setHasMore(page < data.total_pages);
-			setLoading(false);
-			setLoadingMore(false);
-		} catch (err) {
-			console.error("Error fetching addresses data:", err);
-			setLoading(false);
-			setLoadingMore(false);
 		}
-	}, [setAllAddressesData]);
+	}, [addressesData, currentPage, setAllAddressesData]);
 
+	// Show leaderboard after delay
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setShowLeaderboard(true);
 		}, 2500);
-
 		return () => clearTimeout(timer);
 	}, []);
 
-	// Initial data loading
-	useEffect(() => {
-		setLoading(true);
-		fetchPrimeBalance();
-		getPrimeValue();
-		fetchAddressesData(1, false);
-	}, [fetchPrimeBalance, getPrimeValue, fetchAddressesData]);
-
-	// Handle filter changes
-	useEffect(() => {
-		if (showOnlyFavorites) {
-			setCurrentPage(1);
-			setHasMore(false);
-		} else {
-			setCurrentPage(1);
+	// Event handlers
+	const toggleFavoritesFilter = useCallback((checked: boolean) => {
+		setShowOnlyFavorites(checked);
+		setCurrentPage(1);
+		if (!checked) {
 			setAllAddressesData([]);
-			fetchAddressesData(1, false);
 		}
-	}, [showOnlyFavorites, fetchAddressesData, setAllAddressesData]);
+	}, [setAllAddressesData]);
 
 	const handleLoadMore = useCallback(() => {
-		if (!loadingMore && currentPage < totalPages && !showOnlyFavorites) {
-			const nextPage = currentPage + 1;
-			setCurrentPage(nextPage);
-			fetchAddressesData(nextPage, true);
+		if (!loadingMore && hasMoreData && !showOnlyFavorites) {
+			setCurrentPage(prev => prev + 1);
 		}
-	}, [currentPage, loadingMore, totalPages, fetchAddressesData, showOnlyFavorites]);
-
-	useEffect(() => {
-		if (primeSupply > 0) {
-			const totalPercentageStaked = (primeBalance / primeSupply) * 100;
-			setTotalPercentageStaked(totalPercentageStaked);
-		}
-	}, [primeBalance, primeSupply]);
-
-	useEffect(() => {
-		const totalValue = primeBalance * primeValue;
-		setTotalStakedValueInUSD(totalValue);
-	}, [primeBalance, primeValue]);
+	}, [hasMoreData, loadingMore, showOnlyFavorites]);
 
 	const handleAddressDetails = useCallback((addresses: string[]) => {
 		const validAddresses = addresses.filter(address =>
@@ -152,13 +122,38 @@ const Home = () => {
 		setCurrentPage,
 		setTotalPages,
 		setHasMore,
-		setLoading,
+		setLoading: setIsLoading,
 		pageSize: PAGE_SIZE
 	});
 
-	const toggleFavoritesFilter = useCallback((checked: boolean) => {
-		setShowOnlyFavorites(checked);
-	}, []);
+	// Scroll to highlighted address when it changes
+	useEffect(() => {
+		if (highlightAddress && !loading) {
+			// Give more time for the DOM to update and the virtualized list to render
+			setTimeout(() => {
+				const highlightedElement = document.getElementById(`address-${highlightAddress}`);
+				if (highlightedElement) {
+					// First try to use the element's scrollIntoView method
+					highlightedElement.scrollIntoView({
+						behavior: 'smooth',
+						block: 'center'
+					});
+					
+					// Add a visual indicator by adding a temporary class
+					highlightedElement.classList.add('highlight-pulse-strong');
+					setTimeout(() => {
+						highlightedElement.classList.remove('highlight-pulse-strong');
+					}, 2000);
+				}
+			}, 500); // Increased delay to ensure the list has time to render
+		}
+	}, [highlightAddress, loading]);
+
+	// Show error states if any
+	if (primeError || valueError || addressesError) {
+		console.error('Error fetching data:', { primeError, valueError, addressesError });
+		// You might want to add error UI here
+	}
 
 	return (
 		<div className="flex flex-col items-center min-h-screen md:mb-10">
@@ -236,7 +231,7 @@ const Home = () => {
 							showOnlyFavorites={showOnlyFavorites}
 							onLoadMore={handleLoadMore}
 							isLoadingMore={loadingMore}
-							hasMore={hasMore}
+							hasMore={hasMoreData}
 						/>
 					</FadeIn>
 				</div>

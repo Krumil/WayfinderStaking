@@ -52,8 +52,14 @@ export async function GET(
 		const totalUsers = data.total_users;
 
 		// Calculate values
-		const userPrimeCached = (Number(userData.base_prime_amount_cached || 0) + Number(userData.prime_amount_cached || 0)) / 1e18; // Convert from wei
+		const userPrimeCached = Number(userData.prime_amount_cached || 0) / 1e18; // Convert from wei
 		const percentage = Number(userData.percentage || 0).toPrecision(4);
+
+		// Calculate total score
+		const totalScore = (userData.merged_boosted_referred_score_data?.prime_score || 0) + 
+						   (userData.merged_boosted_referred_score_data?.community_score || 0) + 
+						   (userData.merged_boosted_referred_score_data?.initialization_score || 0);
+		userData.total_score = totalScore;
 
 		// Calculate estimated PROMPT tokens and value
 		const stakingRewards = 1000000; // 1M PROMPT tokens

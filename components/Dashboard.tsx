@@ -97,7 +97,7 @@ const Dashboard = ({
 	useEffect(() => {
 		if (!userData || !isInitialized) return;
 		const tokens = (userData.percentage / 100) * stakingRewards;
-		setUserPrimeCached(((userData.prime_amount_cached || 0) + (userData.base_prime_amount_cached || 0)) / 1_000_000_000_000_000_000);
+		setUserPrimeCached((userData.prime_amount_cached || 0) / 1_000_000_000_000_000_000);
 		setUserPercentage(userData.percentage.toPrecision(2));
 		setUserEarnedPromptTokens(tokens);
 
@@ -109,7 +109,7 @@ const Dashboard = ({
 			setUserEarnedPromptTokensInUSD(tokens * promptPrice);
 			setRoi(roiValue);
 		}
-	}, [userData, stakingRewards, fullyDiluitedValue, primePrice, userPrimeCached, isInitialized]);
+	}, [userData, isInitialized, stakingRewards, fullyDiluitedValue, userPrimeCached, primePrice, promptSupply]);
 
 	const handleFdvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFullyDiluitedValue(parseFloat(e.target.value));
@@ -183,9 +183,6 @@ const Dashboard = ({
 				<div>
 					<div onClick={() => handleCopyAddress(userAddresses[0])} className="cursor-pointer z-[60]">
 						{ensNames[userAddresses[0].toLowerCase()] || `${userAddresses[0].slice(0, 6)}...${userAddresses[0].slice(-4)}`}
-						{userData?.secondary_addresses && userData.secondary_addresses.length > 0 &&
-							<span className="text-sm">{` (+ ${userData.secondary_addresses.length} others)`}</span>
-						}
 					</div>
 				</div>
 			),
@@ -199,7 +196,7 @@ const Dashboard = ({
 							</span>{" "}
 							$PRIME, giving a {isMultipleAddresses ? "combined " : ""}Contribution Score of{" "}
 							<span className="md:text-3xl text-gradient-transparent">
-								<AnimatedNumber value={(userData?.merged_score_data?.prime_score || 0) + (userData?.merged_score_data?.community_score || 0) + (userData?.merged_score_data?.initialization_score || 0)} />
+								<AnimatedNumber value={(userData?.merged_boosted_referred_score_data?.prime_score || 0) + (userData?.merged_boosted_referred_score_data?.community_score || 0) + (userData?.merged_boosted_referred_score_data?.initialization_score || 0)} />
 							</span>{" "}
 						</div>
 					</div>
@@ -287,12 +284,6 @@ const Dashboard = ({
 			content: (
 				<div className="text-base">
 					<div className="flex flex-row items-center justify-between my-2">
-						{isMultipleAddresses ? "Total Inactive" : "Inactive"} Referrals:
-						<span>
-							<AnimatedNumber value={userData?.extra.inactive_referrals || 0} />
-						</span>
-					</div>
-					<div className="flex flex-row items-center justify-between my-2">
 						{isMultipleAddresses ? "Total Users" : "Users"} Referred:{" "}
 						<span>
 							<AnimatedNumber value={userData?.users_referred || 0} />
@@ -332,6 +323,18 @@ const Dashboard = ({
 						Participated in Prime Unlock Vote:{" "}
 						<span>
 							{userData?.participated_in_prime_unlock_vote ? "Yes" : "No"}
+						</span>
+					</div>
+					<div className="flex flex-row items-center justify-between my-2">
+						Governance Vote 2:{" "}
+						<span>
+							{userData?.governance_vote_2 ? "Yes" : "No"}
+						</span>
+					</div>
+					<div className="flex flex-row items-center justify-between my-2">
+						Governance Vote 3:{" "}
+						<span>
+							{userData?.governance_vote_3 ? "Yes" : "No"}
 						</span>
 					</div>
 					<div className="flex flex-row items-center justify-between my-2">
@@ -623,41 +626,41 @@ const Dashboard = ({
 				</div>
 			),
 		}, */
-		{
-			title: <div>Linked Addresses</div>,
-			content: (
-				<div className="text-base">
-					{addressList.length > 1 ? (
-						<div className="grid grid-cols-2 gap-1">
-							{addressList.slice(1).map((addressData, index) => (
-								<a
-									key={index}
-									href={`/address/${addressData.address}`}
-									className="p-1 rounded-lg bg-judge-gray-800/20 hover:bg-judge-gray-800/40 transition-colors flex items-center justify-between group relative z-[60]"
-								>
-									<div className="flex items-center w-full gap-2">
-										<span className="text-sm font-mono flex-1 truncate">
-											<span className="md:hidden">
-												{`${addressData.ensName?.slice(0, 4) || addressData.address.slice(0, 4)}...${addressData.ensName?.slice(-4) || addressData.address.slice(-4)}`}
-											</span>
-											<span className="hidden md:inline">
-												{addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
-											</span>
-										</span>
-										<span className="text-xs hidden md:block text-judge-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-											Show
-										</span>
-										<ArrowUpRightIcon className="w-4 h-4" />
-									</div>
-								</a>
-							))}
-						</div>
-					) : (
-						<div className="text-center text-judge-gray-400">No linked addresses found</div>
-					)}
-				</div>
-			),
-		},
+		// {
+		// 	title: <div>Linked Addresses</div>,
+		// 	content: (
+		// 		<div className="text-base">
+		// 			{addressList.length > 1 ? (
+		// 				<div className="grid grid-cols-2 gap-1">
+		// 					{addressList.slice(1).map((addressData, index) => (
+		// 						<a
+		// 							key={index}
+		// 							href={`/address/${addressData.address}`}
+		// 							className="p-1 rounded-lg bg-judge-gray-800/20 hover:bg-judge-gray-800/40 transition-colors flex items-center justify-between group relative z-[60]"
+		// 						>
+		// 							<div className="flex items-center w-full gap-2">
+		// 								<span className="text-sm font-mono flex-1 truncate">
+		// 									<span className="md:hidden">
+		// 										{`${addressData.ensName?.slice(0, 4) || addressData.address.slice(0, 4)}...${addressData.ensName?.slice(-4) || addressData.address.slice(-4)}`}
+		// 									</span>
+		// 									<span className="hidden md:inline">
+		// 										{addressData.ensName || `${addressData.address.slice(0, 6)}...${addressData.address.slice(-4)}`}
+		// 									</span>
+		// 								</span>
+		// 								<span className="text-xs hidden md:block text-judge-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+		// 									Show
+		// 								</span>
+		// 								<ArrowUpRightIcon className="w-4 h-4" />
+		// 							</div>
+		// 						</a>
+		// 					))}
+		// 				</div>
+		// 			) : (
+		// 				<div className="text-center text-judge-gray-400">No linked addresses found</div>
+		// 			)}
+		// 		</div>
+		// 	),
+		// },
 	];
 
 	if (!isInitialized) {

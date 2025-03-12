@@ -38,6 +38,7 @@
 		"react-window": "^1.8.10",
 		"recharts": "^2.15.1",
 		"sharp": "^0.33.4",
+		"swr": "^2.3.2",
 		"tailwindcss-animate": "^1.0.7",
 		"viem": "^2.13.8",
 		"wagmi": "^2.10.0",

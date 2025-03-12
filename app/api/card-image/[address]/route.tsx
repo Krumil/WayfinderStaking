@@ -76,10 +76,16 @@ export async function GET(
 		const globalData = await globalResponse.json();
 		const totalUsers = globalData.total_addresses;
 
-		const userPrimeCached = (Number(userData.base_prime_amount_cached || 0) + Number(userData.prime_amount_cached || 0)) / 1e18;
+		const userPrimeCached = Number(userData.prime_amount_cached || 0) / 1e18;
 		const percentage = Number(userData.percentage || 0).toPrecision(2);
 		const stakingRewards = 1000000;
 		const earnedPromptTokens = (Number(userData.percentage) / 100) * stakingRewards;
+
+		// Calculate total score
+		const totalScore = (userData.merged_boosted_referred_score_data?.prime_score || 0) + 
+						   (userData.merged_boosted_referred_score_data?.community_score || 0) + 
+						   (userData.merged_boosted_referred_score_data?.initialization_score || 0);
+		userData.total_score = totalScore;
 
 		const titleCard = ensName || `${address.slice(0, 8)}...${address.slice(-8)}`;
 
