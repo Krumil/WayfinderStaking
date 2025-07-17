@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface AddressData {
 	address: string;
@@ -6,6 +6,11 @@ export interface AddressData {
 		avatar_count: number;
 		users_referred: number;
 		merged_boosted_referred_score_data: {
+			prime_score: number;
+			community_score: number;
+			initialization_score: number;
+		};
+		merged_score_data?: {
 			prime_score: number;
 			community_score: number;
 			initialization_score: number;
@@ -23,6 +28,37 @@ export interface AddressData {
 		percentage: number;
 		position: number;
 	};
+	yesterday_data?: {
+		address: string;
+		merged_boosted_referred_score_data?: {
+			prime_score: number;
+			community_score: number;
+			initialization_score: number;
+		};
+		data?: {
+			merged_score_data?: {
+				prime_score: number;
+				community_score: number;
+				initialization_score: number;
+			};
+			merged_boosted_referred_score_data?: {
+				prime_score: number;
+				community_score: number;
+				initialization_score: number;
+			};
+			prime_amount_cached?: number;
+			position?: number;
+			percentage?: number;
+		};
+		prime_amount_cached?: number;
+		position?: number;
+		percentage?: number;
+	};
+	changes?: {
+		score_change: number;
+		position_change: number;
+		score_percentage_change: number;
+	};
 }
 
 interface AddressesState {
@@ -32,7 +68,8 @@ interface AddressesState {
 
 export const useAddressesStore = create<AddressesState>((set) => ({
 	allAddressesData: [],
-	setAllAddressesData: (data) => set((state) => ({
-		allAddressesData: typeof data === 'function' ? data(state.allAddressesData) : data
-	})),
+	setAllAddressesData: (data) =>
+		set((state) => ({
+			allAddressesData: typeof data === "function" ? data(state.allAddressesData) : data,
+		})),
 }));

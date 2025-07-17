@@ -22,69 +22,111 @@ export function useAddressSearch({
 	setTotalPages,
 	setHasMore,
 	setLoading,
-	pageSize
+	pageSize,
 }: UseAddressSearchParams) {
-	const searchAddress = useCallback(async (address: string) => {
-		try {
-			let searchAddr = address;
-			if (searchAddr.endsWith(".eth")) {
-				const ensAddress = await getAddressFromENS(searchAddr);
-				if (ensAddress) {
-					searchAddr = ensAddress;
-				} else {
-					toast.error("Could not resolve ENS name");
-					return;
+	const searchAddress = useCallback(
+		async (address: string) => {
+			try {
+				let searchAddr = address;
+				if (searchAddr.endsWith(".eth")) {
+					const ensAddress = await getAddressFromENS(searchAddr);
+					if (ensAddress) {
+						searchAddr = ensAddress;
+					} else {
+						toast.error("Could not resolve ENS name");
+						return;
+					}
 				}
-			}
 
-			const normalizedSearchAddress = searchAddr.toLowerCase();
-			const foundInLoaded = allAddressesData.find(
-				(item: AddressData) => item.address.toLowerCase() === normalizedSearchAddress
-			);
-			if (foundInLoaded) {
-				setHighlightAddress(foundInLoaded.address);
-				// Clear highlight after 4 seconds
-				setTimeout(() => setHighlightAddress(""), 4000);
-				return;
-			}
-
-			setLoading(true);
-			const res = await fetch(`/api/data/search?query=${searchAddr}`);
-			const searchData = await res.json();
-
-			if (searchData.error) {
-				toast.error(searchData.error);
-				setLoading(false);
-				return;
-			}
-
-			setAllAddressesData(searchData.addresses as AddressData[]);
-			const currentPageNum = Math.floor(searchData.position / pageSize) + 1;
-			setCurrentPage(currentPageNum);
-			setTotalPages(Math.ceil(searchData.total_addresses / pageSize));
-			setHasMore(searchData.next_round_number < searchData.total_addresses);
-
-			const addressToHighlight = (searchData.addresses as AddressData[]).find(
-				(item: AddressData) =>
-					item.address.toLowerCase() === searchData.resolved_address.toLowerCase()
-			)?.address;
-
-			if (addressToHighlight) {
-				setTimeout(() => {
-					setHighlightAddress(addressToHighlight);
-					setLoading(false);
+				const normalizedSearchAddress = searchAddr.toLowerCase();
+				const foundInLoaded = allAddressesData.find(
+					(item: AddressData) =>
+						item.address.toLowerCase() === normalizedSearchAddress
+				);
+				if (foundInLoaded) {
+					setHighlightAddress(foundInLoaded.address);
 					// Clear highlight after 4 seconds
 					setTimeout(() => setHighlightAddress(""), 4000);
-				}, 100);
-			} else {
+					return;
+				}
+
+				setLoading(true);
+				const res = await fetch(`/api/data/search?query=${searchAddr}`);
+				const searchData = await res.json();
+
+				if (searchData.error) {
+					toast.error(searchData.error);
+					setLoading(false);
+					return;
+				}
+
+				// Process the addresses data to ensure it's in the correct format
+				const processedAddresses = (searchData.addresses || []).map(
+					(addr: any) => {
+						// Ensure the data structure is consistent
+						const addressData: AddressData = {
+							address: addr.address,
+							data: addr.data || addr,
+							yesterday_data: addr.yesterday_data,
+							changes: addr.changes,
+						};
+
+						// If the data is directly on the address object, move it to the data property
+						if (!addr.data && addr.merged_boosted_referred_score_data) {
+							addressData.data = {
+								...addr,
+								merged_boosted_referred_score_data:
+									addr.merged_boosted_referred_score_data,
+								prime_amount_cached: addr.prime_amount_cached,
+								position: addr.position,
+								percentage: addr.percentage,
+								leaderboard_rank: addr.position,
+							};
+						}
+
+						return addressData;
+					}
+				);
+
+				setAllAddressesData(processedAddresses);
+				const currentPageNum = Math.floor(searchData.position / pageSize) + 1;
+				setCurrentPage(currentPageNum);
+				setTotalPages(Math.ceil(searchData.total_addresses / pageSize));
+				setHasMore(searchData.next_round_number < searchData.total_addresses);
+
+				const addressToHighlight = processedAddresses.find(
+					(item: AddressData) =>
+						item.address.toLowerCase() ===
+						searchData.resolved_address.toLowerCase()
+				)?.address;
+
+				if (addressToHighlight) {
+					setTimeout(() => {
+						setHighlightAddress(addressToHighlight);
+						setLoading(false);
+						// Clear highlight after 4 seconds
+						setTimeout(() => setHighlightAddress(""), 4000);
+					}, 100);
+				} else {
+					setLoading(false);
+				}
+			} catch (error) {
+				console.error("Error searching address:", error);
+				toast.error("Error searching for address");
 				setLoading(false);
 			}
-		} catch (error) {
-			console.error("Error searching address:", error);
-			toast.error("Error searching for address");
-			setLoading(false);
-		}
-	}, [allAddressesData, setAllAddressesData, setHighlightAddress, setCurrentPage, setTotalPages, setHasMore, setLoading, pageSize]);
+		},
+		[
+			allAddressesData,
+			setAllAddressesData,
+			setHighlightAddress,
+			setCurrentPage,
+			setTotalPages,
+			setHasMore,
+			setLoading,
+			pageSize,
+		]
+	);
 
 	return { searchAddress };
-} 
+}

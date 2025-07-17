@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import CardStack from "@/components/CardStack";
-import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import Loader from "@/components/Loader/Loader";
 import toast from "react-hot-toast";
 import {
