@@ -3,10 +3,10 @@
 import "daisyui/dist/full.css";
 import Leaderboard from "@/components/Leaderboard";
 import AddressSearch from "@/components/AddressSearch";
-import SlideUp from "@/components/ui/SlideUp";
-import FadeIn from "@/components/ui/FadeIn";
+import SlideUp from "@/components/SlideUp";
+import FadeIn from "@/components/FadeIn";
 import Loader from "@/components/Loader/Loader";
-import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { Star } from "lucide-react";
 import { fetchPrimeValue } from "@/lib/utils";
 import { getPrimeBalance } from "@/lib/contract";
@@ -14,20 +14,17 @@ import { useAddressesStore, AddressData } from "@/stores/addresses";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAddressSearch } from "@/hooks/useAddressSearch";
-import useSWR from 'swr';
+import useSWR from "swr";
 
 const PAGE_SIZE = 10;
 
 // Fetcher functions
 const fetcherWithBalance = async () => {
-	const [balance, response] = await Promise.all([
-		getPrimeBalance(),
-		fetch("/api/data/global")
-	]);
+	const [balance, response] = await Promise.all([getPrimeBalance(), fetch("/api/data/global")]);
 	const data = await response.json();
 	return {
 		balance: balance ? parseFloat(balance) : 0,
-		circulatingSupply: data.circulatingSupply || 0
+		circulatingSupply: data.circulatingSupply || 0,
 	};
 };
 
@@ -39,6 +36,35 @@ const fetcherPrimeValue = async () => {
 const fetcherAddresses = async (url: string) => {
 	const response = await fetch(url);
 	const data = await response.json();
+
+	// Process the addresses data to ensure it's in the correct format
+	if (data.data && Array.isArray(data.data)) {
+		// Use map instead of forEach for better performance
+		data.data = data.data.map((addr: any) => {
+			// Ensure the data structure is consistent
+			const addressData = {
+				address: addr.address,
+				data: addr.data || addr,
+				yesterday_data: addr.yesterday_data,
+				changes: addr.changes,
+			};
+
+			// If the data is directly on the address object, move it to the data property
+			if (!addr.data && addr.merged_boosted_referred_score_data) {
+				addressData.data = {
+					...addr,
+					merged_boosted_referred_score_data: addr.merged_boosted_referred_score_data,
+					prime_amount_cached: addr.prime_amount_cached,
+					position: addr.position,
+					percentage: addr.percentage,
+					leaderboard_rank: addr.position,
+				};
+			}
+
+			return addressData;
+		});
+	}
+
 	return data;
 };
 
@@ -50,22 +76,39 @@ const Home = () => {
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [hasMore, setHasMore] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [loadingMore, setLoadingMore] = useState<boolean>(false);
 	const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 	const leaderboardRef = useRef<HTMLDivElement>(null);
 
 	const router = useRouter();
 
 	// SWR hooks for data fetching
-	const { data: primeData, error: primeError } = useSWR('prime-balance', fetcherWithBalance);
-	const { data: primeValue, error: valueError } = useSWR('prime-value', fetcherPrimeValue);
-	const { data: addressesData, error: addressesError } = useSWR(
+	const { data: primeData, error: primeError } = useSWR("prime-balance", fetcherWithBalance);
+	const { data: primeValue, error: valueError } = useSWR("prime-value", fetcherPrimeValue);
+	const {
+		data: addressesData,
+		error: addressesError,
+		isValidating,
+	} = useSWR(
 		showOnlyFavorites ? null : `/api/data/addresses?page=${currentPage}&pageSize=${PAGE_SIZE}`,
-		fetcherAddresses
+		fetcherAddresses,
+		{
+			revalidateOnFocus: false,
+			revalidateOnReconnect: false,
+			revalidateIfStale: false,
+			dedupingInterval: 5000,
+			keepPreviousData: true,
+			onSuccess: () => {
+				setLoadingMore(false);
+			},
+			onError: () => {
+				setLoadingMore(false);
+			},
+		}
 	);
 
 	// Derived states
 	const loading = !primeData || !primeValue || (!addressesData && !showOnlyFavorites) || isLoading;
-	const loadingMore = false; // SWR handles loading states
 	const hasMoreData = addressesData ? currentPage < addressesData.total_pages : hasMore;
 	const primeBalance = primeData?.balance || 0;
 	const primeSupply = primeData?.circulatingSupply || 0;
@@ -76,12 +119,20 @@ const Home = () => {
 	useEffect(() => {
 		if (addressesData?.data) {
 			if (currentPage === 1) {
+				// Only reset data if we're actually starting fresh (not switching between modes)
 				setAllAddressesData(addressesData.data);
 			} else {
-				setAllAddressesData(prev => [...prev, ...addressesData.data]);
+				// Merge new data with existing data, avoiding duplicates
+				setAllAddressesData((prev) => {
+					const existingAddresses = new Set(prev.map((item: AddressData) => item.address.toLowerCase()));
+					const newItems = addressesData.data.filter(
+						(item: AddressData) => !existingAddresses.has(item.address.toLowerCase())
+					);
+					return [...prev, ...newItems];
+				});
 			}
 		}
-	}, [addressesData, currentPage, setAllAddressesData]);
+	}, [addressesData, setAllAddressesData]);
 
 	// Show leaderboard after delay
 	useEffect(() => {
@@ -95,25 +146,25 @@ const Home = () => {
 	const toggleFavoritesFilter = useCallback((checked: boolean) => {
 		setShowOnlyFavorites(checked);
 		setCurrentPage(1);
-		if (!checked) {
-			setAllAddressesData([]);
-		}
-	}, [setAllAddressesData]);
+		// Don't clear data when switching modes - let the component handle filtering
+	}, []);
 
 	const handleLoadMore = useCallback(() => {
-		if (!loadingMore && hasMoreData && !showOnlyFavorites) {
-			setCurrentPage(prev => prev + 1);
+		if (!loadingMore && !isValidating && hasMoreData && !showOnlyFavorites) {
+			setLoadingMore(true);
+			setCurrentPage((prev) => prev + 1);
 		}
-	}, [hasMoreData, loadingMore, showOnlyFavorites]);
+	}, [hasMoreData, loadingMore, isValidating, showOnlyFavorites]);
 
-	const handleAddressDetails = useCallback((addresses: string[]) => {
-		const validAddresses = addresses.filter(address =>
-			address.startsWith("0x") || address.endsWith(".eth")
-		);
-		if (validAddresses.length > 0) {
-			router.push(`/address/${validAddresses.join(',')}`);
-		}
-	}, [router]);
+	const handleAddressDetails = useCallback(
+		(addresses: string[]) => {
+			const validAddresses = addresses.filter((address) => address.startsWith("0x") || address.endsWith(".eth"));
+			if (validAddresses.length > 0) {
+				router.push(`/address/${validAddresses.join(",")}`);
+			}
+		},
+		[router]
+	);
 
 	const { searchAddress } = useAddressSearch({
 		allAddressesData,
@@ -123,35 +174,32 @@ const Home = () => {
 		setTotalPages,
 		setHasMore,
 		setLoading: setIsLoading,
-		pageSize: PAGE_SIZE
+		pageSize: PAGE_SIZE,
 	});
 
 	// Scroll to highlighted address when it changes
 	useEffect(() => {
 		if (highlightAddress && !loading) {
-			// Give more time for the DOM to update and the virtualized list to render
 			setTimeout(() => {
 				const highlightedElement = document.getElementById(`address-${highlightAddress}`);
 				if (highlightedElement) {
-					// First try to use the element's scrollIntoView method
 					highlightedElement.scrollIntoView({
-						behavior: 'smooth',
-						block: 'center'
+						behavior: "smooth",
+						block: "center",
 					});
-					
-					// Add a visual indicator by adding a temporary class
-					highlightedElement.classList.add('highlight-pulse-strong');
+
+					highlightedElement.classList.add("highlight-pulse-strong");
 					setTimeout(() => {
-						highlightedElement.classList.remove('highlight-pulse-strong');
+						highlightedElement.classList.remove("highlight-pulse-strong");
 					}, 2000);
 				}
-			}, 500); // Increased delay to ensure the list has time to render
+			}, 500);
 		}
 	}, [highlightAddress, loading]);
 
 	// Show error states if any
 	if (primeError || valueError || addressesError) {
-		console.error('Error fetching data:', { primeError, valueError, addressesError });
+		console.error("Error fetching data:", { primeError, valueError, addressesError });
 		// You might want to add error UI here
 	}
 
@@ -195,20 +243,18 @@ const Home = () => {
 				</SlideUp>
 				<SlideUp delay={1.0}>
 					<div className="w-full flex justify-center">
-						<AddressSearch
-							onAddressDetails={handleAddressDetails}
-							onSearchPosition={searchAddress}
-						/>
+						<AddressSearch onAddressDetails={handleAddressDetails} onSearchPosition={searchAddress} />
 					</div>
 				</SlideUp>
 				<SlideUp delay={1.1}>
 					<div className="flex flex-row items-center justify-center mt-6 mb-4 space-x-2 w-full">
 						<h2 className="text-2xl font-bold text-judge-gray-200">Leaderboard</h2>
 						<Star
-							className={`w-5 h-5 cursor-pointer transition-all duration-300 ease-in-out ${showOnlyFavorites
-								? 'text-yellow-400 fill-yellow-400 scale-110'
-								: 'text-judge-gray-400 hover:text-yellow-400 hover:scale-110'
-								}`}
+							className={`w-5 h-5 cursor-pointer transition-all duration-300 ease-in-out ${
+								showOnlyFavorites
+									? "text-yellow-400 fill-yellow-400 scale-110"
+									: "text-judge-gray-400 hover:text-yellow-400 hover:scale-110"
+							}`}
 							onClick={() => toggleFavoritesFilter(!showOnlyFavorites)}
 						/>
 					</div>
@@ -224,13 +270,12 @@ const Home = () => {
 			{!loading && Array.isArray(allAddressesData) && allAddressesData.length > 0 && showLeaderboard && (
 				<div ref={leaderboardRef} className="w-full">
 					<FadeIn delay={1.1}>
-
 						<Leaderboard
 							addressesData={allAddressesData}
 							addressToHighlight={highlightAddress}
 							showOnlyFavorites={showOnlyFavorites}
 							onLoadMore={handleLoadMore}
-							isLoadingMore={loadingMore}
+							isLoadingMore={loadingMore || isValidating}
 							hasMore={hasMoreData}
 						/>
 					</FadeIn>
